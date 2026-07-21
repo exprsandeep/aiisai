@@ -38,6 +38,9 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
+    // 🔥 FIX BLURRY PIXELS
+    ctx.imageSmoothingEnabled = false;
+
     canvas.width = window.innerWidth;
     canvas.height = 300;
 
