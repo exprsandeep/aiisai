@@ -77,7 +77,8 @@
     const leftBtn = document.getElementById("leftBtn");
     const rightBtn = document.getElementById("rightBtn");
 
-    const lanes = [60, 170, 280];
+    /* Bigger lanes */
+    const lanes = [40, 170, 300];
 
     let car = { 
       x: lanes[1], 
@@ -92,6 +93,7 @@
     let speed = 3;
     let spawnRate = 1100;
     let score = 0;
+    let passedCars = 0;
     let gameOver = false;
 
     function drawRoad() {
@@ -102,13 +104,13 @@
       ctx.lineWidth = 4;
 
       ctx.beginPath();
-      ctx.moveTo(130, 0);
-      ctx.lineTo(130, 450);
+      ctx.moveTo(120, 0);
+      ctx.lineTo(120, 450);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(240, 0);
-      ctx.lineTo(240, 450);
+      ctx.moveTo(250, 0);
+      ctx.lineTo(250, 450);
       ctx.stroke();
     }
 
@@ -143,6 +145,7 @@
 
       drawRoad();
 
+      /* Smooth movement */
       car.x += (car.targetX - car.x) * 0.35;
 
       drawCar();
@@ -152,8 +155,25 @@
         e.y += speed;
       });
 
-      enemies = enemies.filter(e => e.y < 600);
+      /* Score when car passes */
+      enemies = enemies.filter(e => {
+        if (e.y > 450) {
+          passedCars++;
+          score++;
 
+          /* Difficulty increases */
+          if (passedCars % 10 === 0) {
+            speed += 0.5;
+            spawnRate -= 80;
+            if (spawnRate < 400) spawnRate = 400;
+          }
+
+          return false;
+        }
+        return true;
+      });
+
+      /* Collision detection */
       enemies.forEach(e => {
         if (
           Math.abs(e.x - car.x) < 40 &&
@@ -164,7 +184,6 @@
         }
       });
 
-      score++;
       ctx.fillStyle = "white";
       ctx.font = "22px Arial";
       ctx.fillText("Score: " + score, 20, 30);
@@ -196,17 +215,14 @@
       }
     }
 
+    /* On-screen buttons */
     leftBtn.addEventListener("click", moveLeft);
     rightBtn.addEventListener("click", moveRight);
 
-    /* KEYBOARD CONTROLS */
+    /* Keyboard controls */
     document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-        moveLeft();
-      }
-      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-        moveRight();
-      }
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") moveLeft();
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") moveRight();
     });
 
     function startGame() {
@@ -217,6 +233,7 @@
 
       enemies = [];
       score = 0;
+      passedCars = 0;
       speed = 3;
       spawnRate = 1100;
       gameOver = false;
