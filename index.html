@@ -68,7 +68,13 @@
 
     function drawObstacles() {
       obstacles.forEach(o => {
-        ctx.drawImage(cactusImg, o.x, o.y - o.height + 40, o.width, o.height);
+        ctx.drawImage(
+          cactusImg,
+          Math.round(o.x),              // ⭐ FIX BLUR WHILE MOVING
+          o.y - o.height + 40,
+          o.width,
+          o.height
+        );
       });
     }
 
