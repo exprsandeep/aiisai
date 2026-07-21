@@ -38,7 +38,7 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // 🔥 FIX BLURRY PIXELS
+    // 🔥 Pixel art stays sharp
     ctx.imageSmoothingEnabled = false;
 
     canvas.width = window.innerWidth;
@@ -49,13 +49,6 @@
     // Load Dino sprite
     const dinoImg = new Image();
     dinoImg.src = "dino.png";
-
-    // Load cactus sprites
-    const cactusImgSmall = new Image();
-    cactusImgSmall.src = "catus.png";
-
-    const cactusImgBig = new Image();
-    cactusImgBig.src = "catus2.png";   // ⭐ NEW BIGGER CACTUS
 
     function init() {
       dino = { x:50, y:250, width:60, height:60, dy:0, jumping:false };
@@ -69,15 +62,20 @@
       ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
     }
 
+    // ⭐ NEW: Grey spike obstacle
     function drawObstacles() {
+      ctx.fillStyle = "#555"; // grey spike
+
       obstacles.forEach(o => {
-        ctx.drawImage(
-          cactusImgBig,                // ⭐ USE BIG CACTUS
-          Math.round(o.x),             // FIX BLUR WHILE MOVING
-          o.y - o.height + 40,
-          o.width,
-          o.height
-        );
+        const x = Math.round(o.x);
+        const y = o.y;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);                 // bottom left
+        ctx.lineTo(x + o.width, y);       // bottom right
+        ctx.lineTo(x + o.width/2, y - o.height); // top point
+        ctx.closePath();
+        ctx.fill();
       });
     }
 
@@ -93,7 +91,7 @@
       drawObstacles();
       drawScore();
 
-      // gravity (original)
+      // gravity
       if (dino.jumping) {
         dino.y += dino.dy;
         dino.dy += 1;
@@ -129,10 +127,7 @@
         return;
       }
 
-      // increase score
       score++;
-
-      // speed increases over time
       speed = Math.min(speed + 0.005, 20);
 
       requestAnimationFrame(update);
@@ -141,18 +136,16 @@
     function spawnObstacle() {
       if (!gameOver) {
 
-        // ⭐ Adjust size for your new cactus
-        const height = 50;   // you can tweak this if needed
-        const width = 35;
+        // ⭐ Spike size (adjust if you want)
+        const height = 45;  // spike height
+        const width = 45;   // spike width
 
         const lastObstacle = obstacles[obstacles.length - 1];
 
-        // dynamic spacing
         if (!lastObstacle || lastObstacle.x < canvas.width - (300 + speed * 20)) {
           obstacles.push({ x: canvas.width, y: 260, width: width, height: height });
         }
 
-        // dynamic spawn rate
         const spawnRate = Math.max(800, 2000 - score);
         setTimeout(spawnObstacle, spawnRate);
       }
@@ -161,7 +154,7 @@
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && !dino.jumping && !gameOver) {
         dino.jumping = true;
-        dino.dy = -15;   // original jump
+        dino.dy = -15;
       }
     });
 
