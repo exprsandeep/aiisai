@@ -45,12 +45,12 @@
 
     // Load your uploaded Dino sprite
     const dinoImg = new Image();
-    dinoImg.src = "dino.png";   // <-- this uses the file you uploaded
+    dinoImg.src = "dino.png";
 
     function init() {
       dino = { x:50, y:250, width:60, height:60, dy:0, jumping:false };
       obstacles = [];
-      speed = 5;
+      speed = 6;        // starting speed
       gameOver = false;
       score = 0;
     }
@@ -79,7 +79,8 @@
       // gravity
       if (dino.jumping) {
         dino.y += dino.dy;
-        dino.dy += 1;
+        dino.dy += 2;   // stronger gravity
+
         if (dino.y >= 250) {
           dino.y = 250;
           dino.jumping = false;
@@ -114,8 +115,8 @@
       // increase score
       score++;
 
-      // gradually increase speed every frame
-      speed = Math.min(speed + 0.002, 15);
+      // speed increases faster over time
+      speed = Math.min(speed + 0.005, 20);
 
       requestAnimationFrame(update);
     }
@@ -125,20 +126,21 @@
         const height = 40;
         const lastObstacle = obstacles[obstacles.length - 1];
 
-        // Only spawn if last obstacle is far enough away
-        if (!lastObstacle || lastObstacle.x < canvas.width - 200) {
-          obstacles.push({ x: canvas.width, y: 260, width:30, height:height });
+        // dynamic spacing based on speed
+        if (!lastObstacle || lastObstacle.x < canvas.width - (300 + speed * 20)) {
+          obstacles.push({ x: canvas.width, y: 260, width: 30, height: height });
         }
 
-        // Spawn again after 2–4 seconds
-        setTimeout(spawnObstacle, 2000 + Math.random()*2000);
+        // dynamic spawn rate based on score
+        const spawnRate = Math.max(800, 2000 - score);
+        setTimeout(spawnObstacle, spawnRate);
       }
     }
 
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && !dino.jumping && !gameOver) {
         dino.jumping = true;
-        dino.dy = -15;
+        dino.dy = -20;   // stronger jump
       }
     });
 
