@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Car Dodging</title>
+  <style>
+    body {
+      margin: 0;
+      background: #222;
+      text-align: center;
+      font-family: Arial;
+      color: white;
+    }
+
+    #gameCanvas {
+      background: #444;
+      display: none;
+      margin-top: 20px;
+    }
+
+    #playBtn {
+      padding: 15px 30px;
+      font-size: 22px;
+      cursor: pointer;
+      margin-top: 40px;
+    }
+
+    #leftBtn, #rightBtn {
+      padding: 15px 30px;
+      font-size: 22px;
+      cursor: pointer;
+      margin: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Car Dodging Game</h1>
+
+  <button id="playBtn">Play Car Game</button>
+  <br>
+  <button id="leftBtn">⬅️</button>
+  <button id="rightBtn">➡️</button>
+
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const playBtn = document.getElementById("playBtn");
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
+
+    // 3 lane positions
+    const lanes = [80, 180, 280];
+
+    let car = { x: lanes[1], y: 500, width: 50, height: 80 };
+    let laneIndex = 1;
+
+    let enemies = [];
+    let speed = 5;
+    let score = 0;
+    let gameOver = false;
+
+    function drawCar() {
+      ctx.fillStyle = "cyan";
+      ctx.fillRect(car.x, car.y, car.width, car.height);
+    }
+
+    function drawEnemies() {
+      ctx.fillStyle = "red";
+      enemies.forEach(e => {
+        ctx.fillRect(e.x, e.y, e.width, e.height);
+      });
+    }
+
+    function spawnEnemy() {
+      if (gameOver) return;
+
+      const lane = Math.floor(Math.random() * 3);
+      enemies.push({
+        x: lanes[lane],
+        y: -100,
+        width: 50,
+        height: 80
+      });
+
+      setTimeout(spawnEnemy, 800);
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawCar();
+      drawEnemies();
+
+      // Move enemies
+      enemies.forEach(e => {
+        e.y += speed;
+      });
+
+      // Remove off-screen enemies
+      enemies = enemies.filter(e => e.y < 700);
+
+      // Collision detection
+      enemies.forEach(e => {
+        if (
+          e.x === car.x &&
+          e.y + e.height > car.y &&
+          e.y < car.y + car.height
+        ) {
+          gameOver = true;
+        }
+      });
+
+      // Score
+      score++;
+      ctx.fillStyle = "white";
+      ctx.font = "24px Arial";
+      ctx.fillText("Score: " + score, 20, 40);
+
+      if (gameOver) {
+        ctx.fillStyle = "yellow";
+        ctx.font = "40px Arial";
+        ctx.fillText("GAME OVER", 100, 300);
+        return;
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    // Lane movement
+    function moveLeft() {
+      if (laneIndex > 0) {
+        laneIndex--;
+        car.x = lanes[laneIndex];
+      }
+    }
+
+    function moveRight() {
+      if (laneIndex < 2) {
+        laneIndex++;
+        car.x = lanes[laneIndex];
+      }
+    }
+
+    leftBtn.addEventListener("click", moveLeft);
+    rightBtn.addEventListener("click", moveRight);
+
+    playBtn.addEventListener("click", () => {
+      playBtn.style.display = "none";
+      leftBtn.style.display = "inline-block";
+      rightBtn.style.display = "inline-block";
+      canvas.style.display = "block";
+
+      enemies = [];
+      score = 0;
+      speed = 5;
+      gameOver = false;
+      laneIndex = 1;
+      car.x = lanes[1];
+
+      update();
+      spawnEnemy();
+    });
+  </script>
+
+</body>
+</html>
