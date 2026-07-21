@@ -42,11 +42,13 @@
     canvas.height = 300;
 
     let dino, obstacles, speed, gameOver, score;
+
+    // Load Chrome Dino sprite
     const dinoImg = new Image();
-    dinoImg.src = "https://i.imgur.com/4LGAZ8t.png"; // simple dino sprite
+    dinoImg.src = "https://i.imgur.com/4LGAZ8t.png"; // transparent Chrome Dino sprite
 
     function init() {
-      dino = { x:50, y:250, width:50, height:50, dy:0, jumping:false };
+      dino = { x:50, y:250, width:60, height:60, dy:0, jumping:false };
       obstacles = [];
       speed = 5;
       gameOver = false;
@@ -113,7 +115,7 @@
       score++;
 
       // gradually increase speed every frame
-      speed = Math.min(speed + 0.001, 15); // cap max speed at 15
+      speed = Math.min(speed + 0.002, 15); // cap max speed at 15
 
       requestAnimationFrame(update);
     }
