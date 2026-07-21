@@ -9,7 +9,7 @@
       text-align: center;
       font-family: Arial;
       color: white;
-      overflow: hidden; /* No scrolling */
+      overflow: hidden;
       height: 100vh;
       position: relative;
     }
@@ -20,22 +20,26 @@
     }
 
     #gameCanvas {
-      background: #444;
+      background: #333; /* road */
       display: none;
       margin: 0 auto;
       border: 3px solid white;
     }
 
-    #playBtn {
+    #playBtn, #restartBtn {
       padding: 18px 36px;
       font-size: 24px;
       cursor: pointer;
       margin-top: 10px;
     }
 
+    #restartBtn {
+      display: none;
+    }
+
     #controls {
       position: absolute;
-      bottom: 10px;        /* Buttons always visible */
+      bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
       display: none;
@@ -54,11 +58,10 @@
   <h1>Car Dodging Game</h1>
 
   <button id="playBtn">Play Car Game</button>
+  <button id="restartBtn">Restart</button>
 
-  <!-- Canvas -->
   <canvas id="gameCanvas" width="400" height="450"></canvas>
 
-  <!-- Buttons ALWAYS visible at bottom -->
   <div id="controls">
     <button id="leftBtn">⬅️</button>
     <button id="rightBtn">➡️</button>
@@ -69,21 +72,44 @@
     const ctx = canvas.getContext("2d");
 
     const playBtn = document.getElementById("playBtn");
+    const restartBtn = document.getElementById("restartBtn");
     const controls = document.getElementById("controls");
     const leftBtn = document.getElementById("leftBtn");
     const rightBtn = document.getElementById("rightBtn");
 
-    // Lane positions
     const lanes = [60, 170, 280];
 
-    // Car settings
-    let car = { x: lanes[1], y: 320, width: 70, height: 110 };
-    let laneIndex = 1;
+    let car = { 
+      x: lanes[1], 
+      y: 320, 
+      width: 70, 
+      height: 110,
+      targetX: lanes[1]  /* smooth movement target */
+    };
 
+    let laneIndex = 1;
     let enemies = [];
     let speed = 5;
     let score = 0;
     let gameOver = false;
+
+    function drawRoad() {
+      ctx.fillStyle = "#333";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 4;
+
+      ctx.beginPath();
+      ctx.moveTo(130, 0);
+      ctx.lineTo(130, 450);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(240, 0);
+      ctx.lineTo(240, 450);
+      ctx.stroke();
+    }
 
     function drawCar() {
       ctx.fillStyle = "cyan";
@@ -114,7 +140,10 @@
     function update() {
       if (gameOver) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawRoad();
+
+      /* Smooth movement */
+      car.x += (car.targetX - car.x) * 0.2;
 
       drawCar();
       drawEnemies();
@@ -127,7 +156,7 @@
 
       enemies.forEach(e => {
         if (
-          e.x === car.x &&
+          Math.abs(e.x - car.x) < 50 &&
           e.y + e.height > car.y &&
           e.y < car.y + car.height
         ) {
@@ -144,6 +173,9 @@
         ctx.fillStyle = "yellow";
         ctx.font = "36px Arial";
         ctx.fillText("GAME OVER", 100, 200);
+
+        restartBtn.style.display = "inline-block";
+        controls.style.display = "none";
         return;
       }
 
@@ -153,22 +185,23 @@
     function moveLeft() {
       if (laneIndex > 0) {
         laneIndex--;
-        car.x = lanes[laneIndex];
+        car.targetX = lanes[laneIndex]; /* smooth move */
       }
     }
 
     function moveRight() {
       if (laneIndex < 2) {
         laneIndex++;
-        car.x = lanes[laneIndex];
+        car.targetX = lanes[laneIndex]; /* smooth move */
       }
     }
 
     leftBtn.addEventListener("click", moveLeft);
     rightBtn.addEventListener("click", moveRight);
 
-    playBtn.addEventListener("click", () => {
+    function startGame() {
       playBtn.style.display = "none";
+      restartBtn.style.display = "none";
       controls.style.display = "block";
       canvas.style.display = "block";
 
@@ -178,10 +211,14 @@
       gameOver = false;
       laneIndex = 1;
       car.x = lanes[1];
+      car.targetX = lanes[1];
 
       update();
       spawnEnemy();
-    });
+    }
+
+    playBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", startGame);
   </script>
 
 </body>
