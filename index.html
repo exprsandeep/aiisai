@@ -38,7 +38,6 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Pixel art stays sharp
     ctx.imageSmoothingEnabled = false;
 
     canvas.width = window.innerWidth;
@@ -62,20 +61,15 @@
       ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
     }
 
-    // ⭐ RED SPIKE OBSTACLES
+    // ⭐ RECTANGLE OBSTACLES
     function drawObstacles() {
-      ctx.fillStyle = "red";
+      ctx.fillStyle = "red"; // rectangle color
 
       obstacles.forEach(o => {
         const x = Math.round(o.x);
         const y = o.y;
 
-        ctx.beginPath();
-        ctx.moveTo(x, y);                 // bottom left
-        ctx.lineTo(x + o.width, y);       // bottom right
-        ctx.lineTo(x + o.width/2, y - o.height); // top point
-        ctx.closePath();
-        ctx.fill();
+        ctx.fillRect(x, y - o.height, o.width, o.height);
       });
     }
 
@@ -113,8 +107,8 @@
       obstacles.forEach(o => {
         if (dino.x < o.x + o.width &&
             dino.x + dino.width > o.x &&
-            dino.y < o.y + o.height &&
-            dino.y + dino.height > o.y) {
+            dino.y < o.y &&
+            dino.y + dino.height > o.y - o.height) {
           gameOver = true;
         }
       });
@@ -136,9 +130,9 @@
     function spawnObstacle() {
       if (!gameOver) {
 
-        // ⭐ Spike size
-        const height = 45;
-        const width = 45;
+        // ⭐ Rectangle size
+        const height = 50;
+        const width = 30;
 
         const lastObstacle = obstacles[obstacles.length - 1];
 
