@@ -14,21 +14,22 @@
     #gameCanvas {
       background: #444;
       display: none;
-      margin-top: 20px;
+      margin: 20px auto;
+      border: 3px solid white;
     }
 
     #playBtn {
-      padding: 15px 30px;
-      font-size: 22px;
+      padding: 20px 40px;
+      font-size: 26px;
       cursor: pointer;
       margin-top: 40px;
     }
 
     #leftBtn, #rightBtn {
-      padding: 15px 30px;
-      font-size: 22px;
+      padding: 20px 40px;
+      font-size: 30px;
       cursor: pointer;
-      margin: 10px;
+      margin: 20px;
       display: none;
     }
   </style>
@@ -38,11 +39,13 @@
   <h1>Car Dodging Game</h1>
 
   <button id="playBtn">Play Car Game</button>
-  <br>
-  <button id="leftBtn">⬅️</button>
-  <button id="rightBtn">➡️</button>
 
   <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <div id="controls">
+    <button id="leftBtn">⬅️</button>
+    <button id="rightBtn">➡️</button>
+  </div>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -52,10 +55,10 @@
     const leftBtn = document.getElementById("leftBtn");
     const rightBtn = document.getElementById("rightBtn");
 
-    // 3 lane positions
-    const lanes = [80, 180, 280];
+    // Bigger lanes for bigger car
+    const lanes = [60, 170, 280];
 
-    let car = { x: lanes[1], y: 500, width: 50, height: 80 };
+    let car = { x: lanes[1], y: 480, width: 70, height: 110 };
     let laneIndex = 1;
 
     let enemies = [];
@@ -81,9 +84,9 @@
       const lane = Math.floor(Math.random() * 3);
       enemies.push({
         x: lanes[lane],
-        y: -100,
-        width: 50,
-        height: 80
+        y: -120,
+        width: 70,
+        height: 110
       });
 
       setTimeout(spawnEnemy, 800);
@@ -97,15 +100,12 @@
       drawCar();
       drawEnemies();
 
-      // Move enemies
       enemies.forEach(e => {
         e.y += speed;
       });
 
-      // Remove off-screen enemies
       enemies = enemies.filter(e => e.y < 700);
 
-      // Collision detection
       enemies.forEach(e => {
         if (
           e.x === car.x &&
@@ -116,7 +116,6 @@
         }
       });
 
-      // Score
       score++;
       ctx.fillStyle = "white";
       ctx.font = "24px Arial";
@@ -132,7 +131,6 @@
       requestAnimationFrame(update);
     }
 
-    // Lane movement
     function moveLeft() {
       if (laneIndex > 0) {
         laneIndex--;
