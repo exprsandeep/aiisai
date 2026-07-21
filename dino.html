@@ -42,6 +42,8 @@
     canvas.height = 300;
 
     let dino, obstacles, speed, gameOver, score;
+    const dinoImg = new Image();
+    dinoImg.src = "https://i.imgur.com/4LGAZ8t.png"; // simple dino sprite
 
     function init() {
       dino = { x:50, y:250, width:50, height:50, dy:0, jumping:false };
@@ -52,8 +54,7 @@
     }
 
     function drawDino() {
-      ctx.fillStyle = "green";
-      ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+      ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
     }
 
     function drawObstacles() {
@@ -110,6 +111,10 @@
 
       // increase score
       score++;
+
+      // gradually increase speed every frame
+      speed = Math.min(speed + 0.001, 15); // cap max speed at 15
+
       requestAnimationFrame(update);
     }
 
@@ -122,9 +127,6 @@
         if (!lastObstacle || lastObstacle.x < canvas.width - 200) {
           obstacles.push({ x: canvas.width, y: 260, width:30, height:height });
         }
-
-        // Gradual speed increase (capped)
-        speed = Math.min(speed + 0.02, 12);
 
         // Spawn again after 2–4 seconds
         setTimeout(spawnObstacle, 2000 + Math.random()*2000);
