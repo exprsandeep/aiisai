@@ -61,9 +61,9 @@
       ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
     }
 
-    // ⭐ RECTANGLE OBSTACLES
+    // ⭐ RECTANGLE OBSTACLES (correct ground position)
     function drawObstacles() {
-      ctx.fillStyle = "red"; // rectangle color
+      ctx.fillStyle = "black";
 
       obstacles.forEach(o => {
         const x = Math.round(o.x);
@@ -137,7 +137,7 @@
         const lastObstacle = obstacles[obstacles.length - 1];
 
         if (!lastObstacle || lastObstacle.x < canvas.width - (300 + speed * 20)) {
-          obstacles.push({ x: canvas.width, y: 260, width: width, height: height });
+          obstacles.push({ x: canvas.width, y: 310, width: width, height: height }); // ⭐ FIXED GROUND
         }
 
         const spawnRate = Math.max(800, 2000 - score);
