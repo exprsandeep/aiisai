@@ -43,14 +43,18 @@
 
     let dino, obstacles, speed, gameOver, score;
 
-    // Load your uploaded Dino sprite
+    // Load Dino sprite
     const dinoImg = new Image();
     dinoImg.src = "dino.png";
+
+    // Load cactus sprite
+    const cactusImg = new Image();
+    cactusImg.src = "catus.png";
 
     function init() {
       dino = { x:50, y:250, width:60, height:60, dy:0, jumping:false };
       obstacles = [];
-      speed = 6;        // starting speed
+      speed = 6;
       gameOver = false;
       score = 0;
     }
@@ -60,8 +64,9 @@
     }
 
     function drawObstacles() {
-      ctx.fillStyle = "brown";
-      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+      obstacles.forEach(o => {
+        ctx.drawImage(cactusImg, o.x, o.y - o.height + 40, o.width, o.height);
+      });
     }
 
     function drawScore() {
@@ -76,10 +81,10 @@
       drawObstacles();
       drawScore();
 
-      // ORIGINAL jump physics restored
+      // gravity (original)
       if (dino.jumping) {
         dino.y += dino.dy;
-        dino.dy += 1;   // original gravity
+        dino.dy += 1;
 
         if (dino.y >= 250) {
           dino.y = 250;
@@ -115,7 +120,7 @@
       // increase score
       score++;
 
-      // speed increases faster over time
+      // speed increases over time
       speed = Math.min(speed + 0.005, 20);
 
       requestAnimationFrame(update);
@@ -123,15 +128,16 @@
 
     function spawnObstacle() {
       if (!gameOver) {
-        const height = 40;
+        const height = 50;   // cactus height
+        const width = 35;    // cactus width
         const lastObstacle = obstacles[obstacles.length - 1];
 
-        // dynamic spacing based on speed
+        // dynamic spacing
         if (!lastObstacle || lastObstacle.x < canvas.width - (300 + speed * 20)) {
-          obstacles.push({ x: canvas.width, y: 260, width: 30, height: height });
+          obstacles.push({ x: canvas.width, y: 260, width: width, height: height });
         }
 
-        // dynamic spawn rate based on score
+        // dynamic spawn rate
         const spawnRate = Math.max(800, 2000 - score);
         setTimeout(spawnObstacle, spawnRate);
       }
@@ -140,7 +146,7 @@
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && !dino.jumping && !gameOver) {
         dino.jumping = true;
-        dino.dy = -15;   // original jump strength
+        dino.dy = -15;   // original jump
       }
     });
 
