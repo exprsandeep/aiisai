@@ -41,13 +41,14 @@
     canvas.width = window.innerWidth;
     canvas.height = 300;
 
-    let dino, obstacles, speed, gameOver;
+    let dino, obstacles, speed, gameOver, score;
 
     function init() {
       dino = { x:50, y:250, width:50, height:50, dy:0, jumping:false };
       obstacles = [];
       speed = 5;
       gameOver = false;
+      score = 0;
     }
 
     function drawDino() {
@@ -60,10 +61,17 @@
       obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
     }
 
+    function drawScore() {
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 20, 30);
+    }
+
     function update() {
       ctx.clearRect(0,0,canvas.width,canvas.height);
       drawDino();
       drawObstacles();
+      drawScore();
 
       // gravity
       if (dino.jumping) {
@@ -100,15 +108,25 @@
         return;
       }
 
+      // increase score
+      score++;
       requestAnimationFrame(update);
     }
 
     function spawnObstacle() {
       if (!gameOver) {
         const height = 40;
-        obstacles.push({ x: canvas.width, y: 260, width:30, height:height });
-        // speed up over time
-        speed += 0.1;
+        const lastObstacle = obstacles[obstacles.length - 1];
+
+        // Only spawn if last obstacle is far enough away
+        if (!lastObstacle || lastObstacle.x < canvas.width - 200) {
+          obstacles.push({ x: canvas.width, y: 260, width:30, height:height });
+        }
+
+        // Gradual speed increase (capped)
+        speed = Math.min(speed + 0.02, 12);
+
+        // Spawn again after 2–4 seconds
         setTimeout(spawnObstacle, 2000 + Math.random()*2000);
       }
     }
