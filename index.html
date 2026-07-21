@@ -50,9 +50,12 @@
     const dinoImg = new Image();
     dinoImg.src = "dino.png";
 
-    // Load cactus sprite
-    const cactusImg = new Image();
-    cactusImg.src = "catus.png";
+    // Load cactus sprites
+    const cactusImgSmall = new Image();
+    cactusImgSmall.src = "catus.png";
+
+    const cactusImgBig = new Image();
+    cactusImgBig.src = "catus2.png";   // ⭐ NEW BIGGER CACTUS
 
     function init() {
       dino = { x:50, y:250, width:60, height:60, dy:0, jumping:false };
@@ -69,8 +72,8 @@
     function drawObstacles() {
       obstacles.forEach(o => {
         ctx.drawImage(
-          cactusImg,
-          Math.round(o.x),              // ⭐ FIX BLUR WHILE MOVING
+          cactusImgBig,                // ⭐ USE BIG CACTUS
+          Math.round(o.x),             // FIX BLUR WHILE MOVING
           o.y - o.height + 40,
           o.width,
           o.height
@@ -137,8 +140,11 @@
 
     function spawnObstacle() {
       if (!gameOver) {
-        const height = 50;   // cactus height
-        const width = 35;    // cactus width
+
+        // ⭐ Adjust size for your new cactus
+        const height = 50;   // you can tweak this if needed
+        const width = 35;
+
         const lastObstacle = obstacles[obstacles.length - 1];
 
         // dynamic spacing
