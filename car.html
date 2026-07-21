@@ -20,7 +20,7 @@
     }
 
     #gameCanvas {
-      background: #333; /* road */
+      background: #333;
       display: none;
       margin: 0 auto;
       border: 3px solid white;
@@ -82,14 +82,15 @@
     let car = { 
       x: lanes[1], 
       y: 320, 
-      width: 70, 
-      height: 110,
-      targetX: lanes[1]  /* smooth movement target */
+      width: 60, 
+      height: 95,
+      targetX: lanes[1]
     };
 
     let laneIndex = 1;
     let enemies = [];
-    let speed = 5;
+    let speed = 3;
+    let spawnRate = 1100;
     let score = 0;
     let gameOver = false;
 
@@ -130,11 +131,11 @@
       enemies.push({
         x: lanes[lane],
         y: -120,
-        width: 70,
-        height: 110
+        width: 60,
+        height: 95
       });
 
-      setTimeout(spawnEnemy, 800);
+      setTimeout(spawnEnemy, spawnRate);
     }
 
     function update() {
@@ -142,8 +143,7 @@
 
       drawRoad();
 
-      /* Smooth movement */
-      car.x += (car.targetX - car.x) * 0.2;
+      car.x += (car.targetX - car.x) * 0.35;
 
       drawCar();
       drawEnemies();
@@ -156,7 +156,7 @@
 
       enemies.forEach(e => {
         if (
-          Math.abs(e.x - car.x) < 50 &&
+          Math.abs(e.x - car.x) < 40 &&
           e.y + e.height > car.y &&
           e.y < car.y + car.height
         ) {
@@ -185,19 +185,29 @@
     function moveLeft() {
       if (laneIndex > 0) {
         laneIndex--;
-        car.targetX = lanes[laneIndex]; /* smooth move */
+        car.targetX = lanes[laneIndex];
       }
     }
 
     function moveRight() {
       if (laneIndex < 2) {
         laneIndex++;
-        car.targetX = lanes[laneIndex]; /* smooth move */
+        car.targetX = lanes[laneIndex];
       }
     }
 
     leftBtn.addEventListener("click", moveLeft);
     rightBtn.addEventListener("click", moveRight);
+
+    /* KEYBOARD CONTROLS */
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+        moveLeft();
+      }
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+        moveRight();
+      }
+    });
 
     function startGame() {
       playBtn.style.display = "none";
@@ -207,7 +217,8 @@
 
       enemies = [];
       score = 0;
-      speed = 5;
+      speed = 3;
+      spawnRate = 1100;
       gameOver = false;
       laneIndex = 1;
       car.x = lanes[1];
