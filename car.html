@@ -9,28 +9,38 @@
       text-align: center;
       font-family: Arial;
       color: white;
+      overflow: hidden; /* Prevent scrolling */
+    }
+
+    h1 {
+      margin-top: 10px;
+      font-size: 28px;
     }
 
     #gameCanvas {
       background: #444;
       display: none;
-      margin: 20px auto;
+      margin: 10px auto;
       border: 3px solid white;
     }
 
     #playBtn {
-      padding: 20px 40px;
-      font-size: 26px;
+      padding: 18px 36px;
+      font-size: 24px;
       cursor: pointer;
-      margin-top: 40px;
+      margin-top: 15px;
     }
 
     #leftBtn, #rightBtn {
-      padding: 20px 40px;
-      font-size: 30px;
+      padding: 18px 36px;
+      font-size: 28px;
       cursor: pointer;
-      margin: 20px;
+      margin: 10px;
       display: none;
+    }
+
+    #controls {
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -40,7 +50,7 @@
 
   <button id="playBtn">Play Car Game</button>
 
-  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <canvas id="gameCanvas" width="400" height="500"></canvas>
 
   <div id="controls">
     <button id="leftBtn">⬅️</button>
@@ -55,10 +65,10 @@
     const leftBtn = document.getElementById("leftBtn");
     const rightBtn = document.getElementById("rightBtn");
 
-    // Bigger lanes for bigger car
+    // Lanes
     const lanes = [60, 170, 280];
 
-    let car = { x: lanes[1], y: 480, width: 70, height: 110 };
+    let car = { x: lanes[1], y: 380, width: 70, height: 110 };
     let laneIndex = 1;
 
     let enemies = [];
@@ -104,7 +114,7 @@
         e.y += speed;
       });
 
-      enemies = enemies.filter(e => e.y < 700);
+      enemies = enemies.filter(e => e.y < 600);
 
       enemies.forEach(e => {
         if (
@@ -118,13 +128,13 @@
 
       score++;
       ctx.fillStyle = "white";
-      ctx.font = "24px Arial";
-      ctx.fillText("Score: " + score, 20, 40);
+      ctx.font = "22px Arial";
+      ctx.fillText("Score: " + score, 20, 30);
 
       if (gameOver) {
         ctx.fillStyle = "yellow";
-        ctx.font = "40px Arial";
-        ctx.fillText("GAME OVER", 100, 300);
+        ctx.font = "36px Arial";
+        ctx.fillText("GAME OVER", 100, 250);
         return;
       }
 
