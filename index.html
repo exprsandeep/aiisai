@@ -30,4 +30,134 @@
   <h1>Dino Jump Game</h1>
   <button id="playBtn">Play</button>
   <button id="restartBtn">Restart</button>
-  <canvas id="gameCanvas">
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    const playBtn = document.getElementById("playBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = 300;
+
+    let dino, obstacles, speed, gameOver, score;
+
+    // Load your uploaded Dino sprite
+    const dinoImg = new Image();
+    dinoImg.src = "dino.png";
+
+    function init() {
+      dino = { x:50, y:250, width:60, height:60, dy:0, jumping:false };
+      obstacles = [];
+      speed = 6;        // starting speed
+      gameOver = false;
+      score = 0;
+    }
+
+    function drawDino() {
+      ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+    }
+
+    function drawObstacles() {
+      ctx.fillStyle = "brown";
+      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 20, 30);
+    }
+
+    function update() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      drawDino();
+      drawObstacles();
+      drawScore();
+
+      // ORIGINAL jump physics restored
+      if (dino.jumping) {
+        dino.y += dino.dy;
+        dino.dy += 1;   // original gravity
+
+        if (dino.y >= 250) {
+          dino.y = 250;
+          dino.jumping = false;
+          dino.dy = 0;
+        }
+      }
+
+      // move obstacles
+      obstacles.forEach(o => o.x -= speed);
+
+      // remove off-screen obstacles
+      obstacles = obstacles.filter(o => o.x + o.width > 0);
+
+      // collision detection
+      obstacles.forEach(o => {
+        if (dino.x < o.x + o.width &&
+            dino.x + dino.width > o.x &&
+            dino.y < o.y + o.height &&
+            dino.y + dino.height > o.y) {
+          gameOver = true;
+        }
+      });
+
+      if (gameOver) {
+        ctx.fillStyle = "red";
+        ctx.font = "40px Arial";
+        ctx.fillText("GAME OVER", canvas.width/2 - 100, 150);
+        restartBtn.style.display = "inline-block";
+        return;
+      }
+
+      // increase score
+      score++;
+
+      // speed increases faster over time
+      speed = Math.min(speed + 0.005, 20);
+
+      requestAnimationFrame(update);
+    }
+
+    function spawnObstacle() {
+      if (!gameOver) {
+        const height = 40;
+        const lastObstacle = obstacles[obstacles.length - 1];
+
+        // dynamic spacing based on speed
+        if (!lastObstacle || lastObstacle.x < canvas.width - (300 + speed * 20)) {
+          obstacles.push({ x: canvas.width, y: 260, width: 30, height: height });
+        }
+
+        // dynamic spawn rate based on score
+        const spawnRate = Math.max(800, 2000 - score);
+        setTimeout(spawnObstacle, spawnRate);
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space" && !dino.jumping && !gameOver) {
+        dino.jumping = true;
+        dino.dy = -15;   // original jump strength
+      }
+    });
+
+    playBtn.addEventListener("click", () => {
+      playBtn.style.display = "none";
+      canvas.style.display = "block";
+      init();
+      update();
+      spawnObstacle();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      restartBtn.style.display = "none";
+      init();
+      update();
+      spawnObstacle();
+    });
+  </script>
+</body>
+</html>
