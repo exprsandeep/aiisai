@@ -38,7 +38,7 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // 🔥 Pixel art stays sharp
+    // Pixel art stays sharp
     ctx.imageSmoothingEnabled = false;
 
     canvas.width = window.innerWidth;
@@ -62,9 +62,9 @@
       ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
     }
 
-    // ⭐ NEW: Grey spike obstacle
+    // ⭐ RED SPIKE OBSTACLES
     function drawObstacles() {
-      ctx.fillStyle = "#555"; // grey spike
+      ctx.fillStyle = "red";
 
       obstacles.forEach(o => {
         const x = Math.round(o.x);
@@ -136,9 +136,9 @@
     function spawnObstacle() {
       if (!gameOver) {
 
-        // ⭐ Spike size (adjust if you want)
-        const height = 45;  // spike height
-        const width = 45;   // spike width
+        // ⭐ Spike size
+        const height = 45;
+        const width = 45;
 
         const lastObstacle = obstacles[obstacles.length - 1];
 
