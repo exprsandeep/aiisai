@@ -1,255 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Car Dodging</title>
+  <title>Endless Road</title>
   <style>
     body {
       margin: 0;
-      background: #222;
-      text-align: center;
-      font-family: Arial;
-      color: white;
       overflow: hidden;
-      height: 100vh;
-      position: relative;
+      background: #87CEFA; /* light blue sky */
     }
-
-    h1 {
-      margin-top: 10px;
-      font-size: 26px;
-    }
-
-    #gameCanvas {
-      background: #333;
-      display: none;
-      margin: 0 auto;
-      border: 3px solid white;
-    }
-
-    #playBtn, #restartBtn {
-      padding: 18px 36px;
-      font-size: 24px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    #restartBtn {
-      display: none;
-    }
-
-    #controls {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: none;
-    }
-
-    #leftBtn, #rightBtn {
-      padding: 20px 40px;
-      font-size: 30px;
-      cursor: pointer;
-      margin: 10px;
+    canvas {
+      display: block;
     }
   </style>
 </head>
 <body>
 
-  <h1>Car Dodging Game</h1>
+<canvas id="gameCanvas"></canvas>
 
-  <button id="playBtn">Play Car Game</button>
-  <button id="restartBtn">Restart</button>
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
 
-  <canvas id="gameCanvas" width="400" height="450"></canvas>
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
 
-  <div id="controls">
-    <button id="leftBtn">⬅️</button>
-    <button id="rightBtn">➡️</button>
-  </div>
+  let roadOffset = 0;
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+  function drawScene() {
+    const w = canvas.width;
+    const h = canvas.height;
 
-    const playBtn = document.getElementById("playBtn");
-    const restartBtn = document.getElementById("restartBtn");
-    const controls = document.getElementById("controls");
-    const leftBtn = document.getElementById("leftBtn");
-    const rightBtn = document.getElementById("rightBtn");
+    // Sky (top half)
+    const skyHeight = h * 0.4;
+    ctx.fillStyle = "#87CEFA"; // light blue
+    ctx.fillRect(0, 0, w, skyHeight);
 
-    /* Bigger road lanes */
-    const laneCenters = [80, 200, 320];
+    // Road (bottom part)
+    const roadTop = skyHeight;
+    const roadHeight = h - skyHeight;
+    ctx.fillStyle = "#333"; // dark road
+    ctx.fillRect(0, roadTop, w, roadHeight);
 
-    let car = { 
-      x: 200, 
-      y: 320, 
-      width: 60, 
-      height: 95,
-      speedX: 0
-    };
+    // Lane boundaries (3 lanes)
+    const laneWidth = w / 3;
 
-    let enemies = [];
-    let speed = 3;
-    let spawnRate = 1100;
-    let score = 0;
-    let passedCars = 0;
-    let gameOver = false;
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 4;
 
-    let leftHeld = false;
-    let rightHeld = false;
+    // Left lane line
+    ctx.beginPath();
+    ctx.moveTo(laneWidth, roadTop);
+    ctx.lineTo(laneWidth, h);
+    ctx.stroke();
 
-    function drawRoad() {
-      ctx.fillStyle = "#333";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Right lane line
+    ctx.beginPath();
+    ctx.moveTo(2 * laneWidth, roadTop);
+    ctx.lineTo(2 * laneWidth, h);
+    ctx.stroke();
 
-      ctx.strokeStyle = "#888";
-      ctx.lineWidth = 4;
+    // Endless dashed lane markers
+    const dashLength = 40;
+    const gapLength = 30;
 
-      ctx.beginPath();
-      ctx.moveTo(140, 0);
-      ctx.lineTo(140, 450);
-      ctx.stroke();
+    ctx.strokeStyle = "#FFFFAA";
+    ctx.lineWidth = 6;
 
-      ctx.beginPath();
-      ctx.moveTo(260, 0);
-      ctx.lineTo(260, 450);
-      ctx.stroke();
-    }
+    for (let lane = 1; lane <= 2; lane++) {
+      const x = lane * laneWidth;
+      let y = roadTop + (roadOffset % (dashLength + gapLength)) - (dashLength + gapLength);
 
-    function drawCar() {
-      ctx.fillStyle = "cyan";
-      ctx.fillRect(car.x - car.width/2, car.y, car.width, car.height);
-    }
-
-    function drawEnemies() {
-      ctx.fillStyle = "red";
-      enemies.forEach(e => {
-        ctx.fillRect(e.x - e.width/2, e.y, e.width, e.height);
-      });
-    }
-
-    function spawnEnemy() {
-      if (gameOver) return;
-
-      const lane = Math.floor(Math.random() * 3);
-      enemies.push({
-        x: laneCenters[lane],
-        y: -120,
-        width: 60,
-        height: 95
-      });
-
-      setTimeout(spawnEnemy, spawnRate);
-    }
-
-    function update() {
-      if (gameOver) return;
-
-      drawRoad();
-
-      /* Movement physics */
-      if (leftHeld) car.speedX = -4;
-      if (rightHeld) car.speedX = 4;
-
-      /* Drift effect */
-      car.speedX *= 0.9;
-
-      car.x += car.speedX;
-
-      /* Keep car inside road */
-      if (car.x < 40) car.x = 40;
-      if (car.x > 360) car.x = 360;
-
-      drawCar();
-      drawEnemies();
-
-      enemies.forEach(e => {
-        e.y += speed;
-      });
-
-      enemies = enemies.filter(e => {
-        if (e.y > 450) {
-          passedCars++;
-          score++;
-
-          if (passedCars % 10 === 0) {
-            speed += 0.5;
-            spawnRate -= 80;
-            if (spawnRate < 400) spawnRate = 400;
-          }
-
-          return false;
-        }
-        return true;
-      });
-
-      enemies.forEach(e => {
-        if (
-          Math.abs(e.x - car.x) < 40 &&
-          e.y + e.height > car.y &&
-          e.y < car.y + car.height
-        ) {
-          gameOver = true;
-        }
-      });
-
-      ctx.fillStyle = "white";
-      ctx.font = "22px Arial";
-      ctx.fillText("Score: " + score, 20, 30);
-
-      if (gameOver) {
-        ctx.fillStyle = "yellow";
-        ctx.font = "36px Arial";
-        ctx.fillText("GAME OVER", 100, 200);
-
-        restartBtn.style.display = "inline-block";
-        controls.style.display = "none";
-        return;
+      while (y < h) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + dashLength);
+        ctx.stroke();
+        y += dashLength + gapLength;
       }
-
-      requestAnimationFrame(update);
     }
+  }
 
-    /* On-screen buttons */
-    leftBtn.addEventListener("mousedown", () => leftHeld = true);
-    leftBtn.addEventListener("mouseup", () => leftHeld = false);
-    rightBtn.addEventListener("mousedown", () => rightHeld = true);
-    rightBtn.addEventListener("mouseup", () => rightHeld = false);
+  function update() {
+    roadOffset += 5; // speed of road movement
+    drawScene();
+    requestAnimationFrame(update);
+  }
 
-    /* Keyboard controls */
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftHeld = true;
-      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightHeld = true;
-    });
-
-    document.addEventListener("keyup", (e) => {
-      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftHeld = false;
-      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightHeld = false;
-    });
-
-    function startGame() {
-      playBtn.style.display = "none";
-      restartBtn.style.display = "none";
-      controls.style.display = "block";
-      canvas.style.display = "block";
-
-      enemies = [];
-      score = 0;
-      passedCars = 0;
-      speed = 3;
-      spawnRate = 1100;
-      gameOver = false;
-
-      car.x = 200;
-      car.speedX = 0;
-
-      update();
-      spawnEnemy();
-    }
-
-    playBtn.addEventListener("click", startGame);
-    restartBtn.addEventListener("click", startGame);
-  </script>
+  update();
+</script>
 
 </body>
 </html>
