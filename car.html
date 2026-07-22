@@ -6,7 +6,7 @@
     body {
       margin: 0;
       overflow: hidden;
-      background: #87CEFA; /* sky */
+      background: #777; /* grey footpath background */
     }
     canvas {
       display: block;
@@ -45,14 +45,14 @@
     const h = canvas.height;
 
     // Sky only at the top (20% of screen)
-    const skyHeight = h * 0.22;
-    ctx.fillStyle = "#87CEFA";
+    const skyHeight = h * 0.20;
+    ctx.fillStyle = "#87CEFA"; // light blue sky
     ctx.fillRect(0, 0, w, skyHeight);
 
-    // Clouds
-    drawCloud(w * 0.2, skyHeight * 0.5, 1.2);
-    drawCloud(w * 0.5, skyHeight * 0.3, 1.0);
-    drawCloud(w * 0.8, skyHeight * 0.55, 1.3);
+    // Clouds overlapping the road
+    drawCloud(w * 0.25, skyHeight * 0.7, 1.3);
+    drawCloud(w * 0.55, skyHeight * 0.5, 1.1);
+    drawCloud(w * 0.80, skyHeight * 0.75, 1.4);
 
     // Road perspective points
     const roadBottomLeft = w * 0.10;
@@ -61,7 +61,7 @@
     // EXTEND ROAD FAR ABOVE SCREEN (triangle tip invisible)
     const roadTopLeft = w * 0.45;
     const roadTopRight = w * 0.55;
-    const roadTopY = -h * 1.5;  // even higher for perfect illusion
+    const roadTopY = -h * 1.5;
 
     // Road shape (big triangle)
     ctx.fillStyle = "#333";
