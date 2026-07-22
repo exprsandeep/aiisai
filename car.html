@@ -59,4 +59,58 @@
 
     // Lane lines (perspective)
     const laneCount = 3;
-    const laneSpacingBottom
+    const laneSpacingBottom = (roadBottomRight - roadBottomLeft) / laneCount;
+    const laneSpacingTop = (roadTopRight - roadTopLeft) / laneCount;
+
+    ctx.strokeStyle = "#FFF";
+    ctx.lineWidth = 4;
+
+    for (let i = 1; i < laneCount; i++) {
+      const bottomX = roadBottomLeft + laneSpacingBottom * i;
+      const topX = roadTopLeft + laneSpacingTop * i;
+
+      ctx.beginPath();
+      ctx.moveTo(bottomX, h);
+      ctx.lineTo(topX, horizonY);
+      ctx.stroke();
+    }
+
+    // Moving dashed lane markers
+    ctx.strokeStyle = "#FFFFAA";
+    ctx.lineWidth = 6;
+
+    const dashLength = 40;
+    const gapLength = 60;
+
+    for (let i = 1; i < laneCount; i++) {
+      const bottomX = roadBottomLeft + laneSpacingBottom * i;
+      const topX = roadTopLeft + laneSpacingTop * i;
+
+      let y = h - ((roadOffset % (dashLength + gapLength)));
+
+      while (y > horizonY) {
+        // Interpolate X position based on Y
+        const t = (y - horizonY) / (h - horizonY);
+        const x = topX + (bottomX - topX) * t;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - dashLength);
+        ctx.stroke();
+
+        y -= dashLength + gapLength;
+      }
+    }
+  }
+
+  function update() {
+    roadOffset += 10; // speed of road movement
+    drawScene();
+    requestAnimationFrame(update);
+  }
+
+  update();
+</script>
+
+</body>
+</html>
