@@ -44,26 +44,14 @@
     const w = canvas.width;
     const h = canvas.height;
 
-    // Sky overlaps the road (covers top 35% of screen)
-    const skyHeight = h * 0.35;
-    ctx.fillStyle = "#87CEFA"; // light blue sky
-    ctx.fillRect(0, 0, w, skyHeight);
-
-    // Clouds overlapping the road
-    drawCloud(w * 0.25, skyHeight * 0.7, 1.3);
-    drawCloud(w * 0.55, skyHeight * 0.5, 1.1);
-    drawCloud(w * 0.80, skyHeight * 0.75, 1.4);
-
-    // Road perspective points
+    // ROAD FIRST (so sky can overlap it)
     const roadBottomLeft = w * 0.10;
     const roadBottomRight = w * 0.90;
 
-    // EXTEND ROAD FAR ABOVE SCREEN (triangle tip invisible)
     const roadTopLeft = w * 0.45;
     const roadTopRight = w * 0.55;
-    const roadTopY = -h * 1.5;
+    const roadTopY = -h * 1.5; // far above screen
 
-    // Road shape (big triangle)
     ctx.fillStyle = "#333";
     ctx.beginPath();
     ctx.moveTo(roadBottomLeft, h);
@@ -73,7 +61,7 @@
     ctx.closePath();
     ctx.fill();
 
-    // Lane lines (3 lanes)
+    // Lane lines
     const laneCount = 3;
     const laneSpacingBottom = (roadBottomRight - roadBottomLeft) / laneCount;
     const laneSpacingTop = (roadTopRight - roadTopLeft) / laneCount;
@@ -116,10 +104,20 @@
         y -= dashLength + gapLength;
       }
     }
+
+    // NOW DRAW SKY OVER THE ROAD
+    const skyHeight = h * 0.30; // covers top of road
+    ctx.fillStyle = "#87CEFA";
+    ctx.fillRect(0, 0, w, skyHeight);
+
+    // Clouds OVER the sky AND road
+    drawCloud(w * 0.25, skyHeight * 0.7, 1.3);
+    drawCloud(w * 0.55, skyHeight * 0.5, 1.1);
+    drawCloud(w * 0.80, skyHeight * 0.75, 1.4);
   }
 
   function update() {
-    roadOffset += 12; // speed of road movement
+    roadOffset += 12;
     drawScene();
     requestAnimationFrame(update);
   }
