@@ -44,8 +44,8 @@
     const w = canvas.width;
     const h = canvas.height;
 
-    // Sky only at the top (20% of screen)
-    const skyHeight = h * 0.20;
+    // Sky overlaps the road (covers top 35% of screen)
+    const skyHeight = h * 0.35;
     ctx.fillStyle = "#87CEFA"; // light blue sky
     ctx.fillRect(0, 0, w, skyHeight);
 
