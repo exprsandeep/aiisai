@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Endless Road</title>
+  <title>Motorway POV</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background: #87CEFA; /* light blue sky */
+      background: #87CEFA; /* sky */
     }
     canvas {
       display: block;
@@ -34,64 +34,29 @@
     const w = canvas.width;
     const h = canvas.height;
 
-    // Sky (top half)
-    const skyHeight = h * 0.4;
-    ctx.fillStyle = "#87CEFA"; // light blue
-    ctx.fillRect(0, 0, w, skyHeight);
+    // Sky
+    ctx.fillStyle = "#87CEFA";
+    ctx.fillRect(0, 0, w, h);
 
-    // Road (bottom part)
-    const roadTop = skyHeight;
-    const roadHeight = h - skyHeight;
-    ctx.fillStyle = "#333"; // dark road
-    ctx.fillRect(0, roadTop, w, roadHeight);
+    // Horizon
+    const horizonY = h * 0.45;
 
-    // Lane boundaries (3 lanes)
-    const laneWidth = w / 3;
+    // Road perspective points
+    const roadBottomLeft = w * 0.15;
+    const roadBottomRight = w * 0.85;
+    const roadTopLeft = w * 0.40;
+    const roadTopRight = w * 0.60;
 
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 4;
-
-    // Left lane line
+    // Road shape
+    ctx.fillStyle = "#333";
     ctx.beginPath();
-    ctx.moveTo(laneWidth, roadTop);
-    ctx.lineTo(laneWidth, h);
-    ctx.stroke();
+    ctx.moveTo(roadBottomLeft, h);
+    ctx.lineTo(roadBottomRight, h);
+    ctx.lineTo(roadTopRight, horizonY);
+    ctx.lineTo(roadTopLeft, horizonY);
+    ctx.closePath();
+    ctx.fill();
 
-    // Right lane line
-    ctx.beginPath();
-    ctx.moveTo(2 * laneWidth, roadTop);
-    ctx.lineTo(2 * laneWidth, h);
-    ctx.stroke();
-
-    // Endless dashed lane markers
-    const dashLength = 40;
-    const gapLength = 30;
-
-    ctx.strokeStyle = "#FFFFAA";
-    ctx.lineWidth = 6;
-
-    for (let lane = 1; lane <= 2; lane++) {
-      const x = lane * laneWidth;
-      let y = roadTop + (roadOffset % (dashLength + gapLength)) - (dashLength + gapLength);
-
-      while (y < h) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y + dashLength);
-        ctx.stroke();
-        y += dashLength + gapLength;
-      }
-    }
-  }
-
-  function update() {
-    roadOffset += 5; // speed of road movement
-    drawScene();
-    requestAnimationFrame(update);
-  }
-
-  update();
-</script>
-
-</body>
-</html>
+    // Lane lines (perspective)
+    const laneCount = 3;
+    const laneSpacingBottom
