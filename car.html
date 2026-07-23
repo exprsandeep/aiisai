@@ -6,7 +6,7 @@
     body {
       margin: 0;
       overflow: hidden;
-      background: #777; /* grey footpath background */
+      background: #777; /* grey ground */
     }
     canvas {
       display: block;
@@ -40,17 +40,53 @@
     ctx.fill();
   }
 
+  function drawMountains() {
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.fillStyle = "#556B2F"; // dark green mountains
+
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.35);
+    ctx.lineTo(w * 0.15, h * 0.20);
+    ctx.lineTo(w * 0.30, h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(w, h * 0.35);
+    ctx.lineTo(w * 0.85, h * 0.20);
+    ctx.lineTo(w * 0.70, h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawBuildings() {
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.fillStyle = "#444";
+
+    // Left buildings
+    ctx.fillRect(w * 0.02, h * 0.30, 60, 200);
+    ctx.fillRect(w * 0.10, h * 0.25, 50, 250);
+
+    // Right buildings
+    ctx.fillRect(w * 0.88, h * 0.30, 60, 200);
+    ctx.fillRect(w * 0.78, h * 0.25, 50, 250);
+  }
+
   function drawScene() {
     const w = canvas.width;
     const h = canvas.height;
 
-    // ROAD FIRST (so sky can overlap it)
+    // ROAD FIRST
     const roadBottomLeft = w * 0.10;
     const roadBottomRight = w * 0.90;
 
     const roadTopLeft = w * 0.45;
     const roadTopRight = w * 0.55;
-    const roadTopY = -h * 1.5; // far above screen
+    const roadTopY = -h * 1.5;
 
     ctx.fillStyle = "#333";
     ctx.beginPath();
@@ -105,15 +141,19 @@
       }
     }
 
-    // NOW DRAW SKY OVER THE ROAD
-    const skyHeight = h * 0.30; // covers top of road
+    // SKY OVER ROAD
+    const skyHeight = h * 0.30;
     ctx.fillStyle = "#87CEFA";
     ctx.fillRect(0, 0, w, skyHeight);
 
-    // Clouds OVER the sky AND road
+    // CLOUDS OVER ROAD
     drawCloud(w * 0.25, skyHeight * 0.7, 1.3);
     drawCloud(w * 0.55, skyHeight * 0.5, 1.1);
     drawCloud(w * 0.80, skyHeight * 0.75, 1.4);
+
+    // SIDE SCENERY (choose one)
+    drawMountains();  // countryside
+    // drawBuildings(); // city
   }
 
   function update() {
