@@ -106,13 +106,15 @@ for (let i = 0; i < 50; i++) {
 /* PLATFORMS (some moving) */
 let platforms = [];
 for (let i = 0; i < 20; i++) {
+  const x = i * 300;
   platforms.push({
-    x: i * 300,
+    x: x,
     y: canvas.height - (Math.random() * 300 + 100),
     w: 200,
     h: 20,
     moving: Math.random() < 0.3,
-    dir: 1
+    dir: 1,
+    startX: x
   });
 }
 
@@ -135,7 +137,8 @@ for (let i = 0; i < 20; i++) {
     x: i * 300 + 150,
     y: canvas.height - (Math.random() * 300 + 200),
     w: 20,
-    h: 20
+    h: 20,
+    collected: false
   });
 }
 
@@ -144,7 +147,7 @@ let keys = {};
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
-/* START GAME */
+/* START SCREEN */
 document.getElementById("startScreen").style.display = "block";
 
 document.getElementById("playBtn").onclick = () => {
@@ -169,8 +172,9 @@ function startCountdown() {
   }, 1000);
 }
 
-/* RESTART */
+/* RESTART BUTTON */
 document.getElementById("restartBtn").onclick = () => {
+  // Simple full restart
   location.reload();
 };
 
@@ -198,6 +202,12 @@ function update() {
   /* APPLY VELOCITY */
   player.x += player.vx;
   player.y += player.vy;
+
+  /* FALLING INTO FLOOR GAPS = GAME OVER */
+  if (player.y > canvas.height) {
+    gameOver = true;
+    document.getElementById("gameOverScreen").style.display = "block";
+  }
 
   /* FLOOR COLLISION */
   player.grounded = false;
@@ -236,12 +246,11 @@ function update() {
     }
   }
 
-  /* ENEMY MOVEMENT */
+  /* ENEMY MOVEMENT + DAMAGE */
   for (let e of enemies) {
     e.x += e.dir * 2;
     if (Math.random() < 0.01) e.dir *= -1;
 
-    /* ENEMY DAMAGE */
     if (
       player.x < e.x + e.w &&
       player.x + player.w > e.x &&
@@ -252,22 +261,22 @@ function update() {
     }
   }
 
-  /* COINS */
+  /* COINS (HEAL) */
   for (let c of coins) {
+    if (c.collected) continue;
+
     if (
       player.x < c.x + c.w &&
       player.x + player.w > c.x &&
       player.y < c.y + c.h &&
       player.y + player.h > c.y
     ) {
-      player.health += 5;
+      player.health += 5; // can go above 100
       c.collected = true;
     }
   }
 
-  coins = coins.filter(c => !c.collected);
-
-  /* GAME OVER */
+  /* GAME OVER BY HEALTH */
   if (player.health <= 0) {
     gameOver = true;
     document.getElementById("gameOverScreen").style.display = "block";
@@ -302,6 +311,7 @@ function draw() {
   /* COINS */
   ctx.fillStyle = "gold";
   for (let c of coins) {
+    if (c.collected) continue;
     ctx.beginPath();
     ctx.arc(c.x - player.x + 200, c.y, 10, 0, Math.PI * 2);
     ctx.fill();
