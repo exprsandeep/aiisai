@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Motorway POV</title>
+  <title>Platformer Game</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background: #777; /* grey ground */
+      background: #87CEFA; /* sky */
     }
     canvas {
       display: block;
@@ -15,117 +15,115 @@
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
+<canvas id="game"></canvas>
 
 <script>
-  const canvas = document.getElementById("gameCanvas");
-  const ctx = canvas.getContext("2d");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+/* PLAYER */
+let player = {
+  x: 100,
+  y: 0,
+  w: 40,
+  h: 60,
+  vx: 0,
+  vy: 0,
+  speed: 5,
+  jumpPower: 15,
+  grounded: false
+};
+
+/* GRAVITY */
+const gravity = 0.8;
+
+/* PLATFORMS */
+const platforms = [
+  { x: 0, y: canvas.height - 40, w: 2000, h: 40 }, // ground
+  { x: 300, y: canvas.height - 150, w: 200, h: 20 },
+  { x: 600, y: canvas.height - 250, w: 200, h: 20 },
+  { x: 900, y: canvas.height - 350, w: 200, h: 20 }
+];
+
+/* KEYS */
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+/* CAMERA */
+let cameraX = 0;
+
+function update() {
+  /* MOVEMENT */
+  if (keys["ArrowRight"]) player.vx = player.speed;
+  else if (keys["ArrowLeft"]) player.vx = -player.speed;
+  else player.vx = 0;
+
+  /* JUMP */
+  if (keys[" "] && player.grounded) {
+    player.vy = -player.jumpPower;
+    player.grounded = false;
   }
-  resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
 
-  let roadOffset = 0;
+  /* APPLY GRAVITY */
+  player.vy += gravity;
 
-  function cloud(x, y, s) {
-    ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.arc(x, y, 25*s, 0, Math.PI*2);
-    ctx.arc(x+30*s, y+10*s, 30*s, 0, Math.PI*2);
-    ctx.arc(x-30*s, y+10*s, 20*s, 0, Math.PI*2);
-    ctx.arc(x+10*s, y-10*s, 22*s, 0, Math.PI*2);
-    ctx.fill();
-  }
+  /* APPLY VELOCITY */
+  player.x += player.vx;
+  player.y += player.vy;
 
-  function drawScene() {
-    const w = canvas.width;
-    const h = canvas.height;
-
-    /* SUPER LONG ROAD */
-    const roadBottomLeft = w * 0.06;
-    const roadBottomRight = w * 0.94;
-
-    /* Narrow top for strong perspective */
-    const roadTopLeft = w * 0.49;
-    const roadTopRight = w * 0.51;
-
-    /* EXTREMELY LONG road (3× screen height) */
-    const roadTopY = -h * 3;
-
-    ctx.fillStyle = "#333";
-    ctx.beginPath();
-    ctx.moveTo(roadBottomLeft, h);
-    ctx.lineTo(roadBottomRight, h);
-    ctx.lineTo(roadTopRight, roadTopY);
-    ctx.lineTo(roadTopLeft, roadTopY);
-    ctx.closePath();
-    ctx.fill();
-
-    /* Lane lines */
-    const laneCount = 3;
-    const laneSpacingBottom = (roadBottomRight - roadBottomLeft) / laneCount;
-    const laneSpacingTop = (roadTopRight - roadTopLeft) / laneCount;
-
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 4;
-
-    for (let i = 1; i < laneCount; i++) {
-      const bottomX = roadBottomLeft + laneSpacingBottom * i;
-      const topX = roadTopLeft + laneSpacingTop * i;
-
-      ctx.beginPath();
-      ctx.moveTo(bottomX, h);
-      ctx.lineTo(topX, roadTopY);
-      ctx.stroke();
+  /* COLLISION */
+  player.grounded = false;
+  for (let p of platforms) {
+    if (
+      player.x < p.x + p.w &&
+      player.x + player.w > p.x &&
+      player.y + player.h > p.y &&
+      player.y + player.h < p.y + p.h &&
+      player.vy >= 0
+    ) {
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
     }
-
-    /* Moving dashed lane markers */
-    ctx.strokeStyle = "#FFFFAA";
-    ctx.lineWidth = 6;
-
-    const dashLength = 50;
-    const gapLength = 70;
-
-    for (let i = 1; i < laneCount; i++) {
-      const bottomX = roadBottomLeft + laneSpacingBottom * i;
-      const topX = roadTopLeft + laneSpacingTop * i;
-
-      let y = h - ((roadOffset % (dashLength + gapLength)));
-
-      while (y > roadTopY) {
-        const t = (y - roadTopY) / (h - roadTopY);
-        const x = topX + (bottomX - topX) * t;
-
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y - dashLength);
-        ctx.stroke();
-
-        y -= dashLength + gapLength;
-      }
-    }
-
-    /* SMALLER SKY (covers less of the road) */
-    const skyHeight = h * 0.18;
-    ctx.fillStyle = "#87CEFA";
-    ctx.fillRect(0, 0, w, skyHeight);
-
-    /* Clouds overlapping road */
-    cloud(w*0.25, skyHeight*0.7, 1.3);
-    cloud(w*0.55, skyHeight*0.5, 1.1);
-    cloud(w*0.80, skyHeight*0.75, 1.4);
   }
 
-  function update() {
-    roadOffset += 16; // faster forward movement
-    drawScene();
-    requestAnimationFrame(update);
+  /* CAMERA FOLLOWS PLAYER */
+  cameraX = player.x - canvas.width / 2;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  /* SKY */
+  ctx.fillStyle = "#87CEFA";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  /* DRAW PLATFORMS */
+  ctx.fillStyle = "#654321";
+  for (let p of platforms) {
+    ctx.fillRect(p.x - cameraX, p.y, p.w, p.h);
   }
 
+  /* DRAW PLAYER */
+  ctx.fillStyle = "red";
+  ctx.fillRect(player.x - cameraX, player.y, player.w, player.h);
+}
+
+function loop() {
   update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
 </script>
 
 </body>
