@@ -93,8 +93,13 @@ const gravity = 0.8;
 
 /* FLOOR WITH GAPS */
 let floorSegments = [];
+let gapPositions = [];
+
 for (let i = 0; i < 50; i++) {
-  if (Math.random() < 0.15) continue; // gap
+  if (Math.random() < 0.20) {
+    gapPositions.push(i * 200);
+    continue;
+  }
   floorSegments.push({
     x: i * 200,
     y: canvas.height - 40,
@@ -103,8 +108,38 @@ for (let i = 0; i < 50; i++) {
   });
 }
 
-/* PLATFORMS (some moving) */
+/* PLATFORMS ABOVE GAPS */
 let platforms = [];
+
+for (let gapX of gapPositions) {
+  let height = canvas.height - 150;
+
+  // Always place at least one platform above the gap
+  platforms.push({
+    x: gapX,
+    y: height,
+    w: 200,
+    h: 20,
+    moving: Math.random() < 0.3,
+    dir: 1,
+    startX: gapX
+  });
+
+  // If gap is big, add extra platforms stacked upward
+  if (Math.random() < 0.5) {
+    platforms.push({
+      x: gapX + 50,
+      y: height - 120,
+      w: 150,
+      h: 20,
+      moving: Math.random() < 0.3,
+      dir: 1,
+      startX: gapX + 50
+    });
+  }
+}
+
+/* EXTRA RANDOM PLATFORMS */
 for (let i = 0; i < 20; i++) {
   const x = i * 300;
   platforms.push({
@@ -112,17 +147,17 @@ for (let i = 0; i < 20; i++) {
     y: canvas.height - (Math.random() * 300 + 100),
     w: 200,
     h: 20,
-    moving: Math.random() < 0.3,
+    moving: Math.random() < 0.2,
     dir: 1,
     startX: x
   });
 }
 
-/* ENEMIES (moving) */
+/* ENEMIES */
 let enemies = [];
-for (let i = 0; i < 15; i++) {
+for (let i = 0; i < 20; i++) {
   enemies.push({
-    x: i * 300 + 200,
+    x: i * 250 + 200,
     y: canvas.height - (Math.random() * 300 + 140),
     w: 40,
     h: 40,
@@ -132,9 +167,9 @@ for (let i = 0; i < 15; i++) {
 
 /* COINS */
 let coins = [];
-for (let i = 0; i < 20; i++) {
+for (let i = 0; i < 30; i++) {
   coins.push({
-    x: i * 300 + 150,
+    x: i * 250 + 150,
     y: canvas.height - (Math.random() * 300 + 200),
     w: 20,
     h: 20,
@@ -174,7 +209,6 @@ function startCountdown() {
 
 /* RESTART BUTTON */
 document.getElementById("restartBtn").onclick = () => {
-  // Simple full restart
   location.reload();
 };
 
@@ -203,7 +237,7 @@ function update() {
   player.x += player.vx;
   player.y += player.vy;
 
-  /* FALLING INTO FLOOR GAPS = GAME OVER */
+  /* FALLING INTO GAP = GAME OVER */
   if (player.y > canvas.height) {
     gameOver = true;
     document.getElementById("gameOverScreen").style.display = "block";
@@ -229,8 +263,8 @@ function update() {
   for (let p of platforms) {
     if (p.moving) {
       p.x += p.dir * 2;
-      if (p.x < p.startX - 50) p.dir = 1;
-      if (p.x > p.startX + 50) p.dir = -1;
+      if (p.x < p.startX - 60) p.dir = 1;
+      if (p.x > p.startX + 60) p.dir = -1;
     }
 
     if (
@@ -261,7 +295,7 @@ function update() {
     }
   }
 
-  /* COINS (HEAL) */
+  /* COINS */
   for (let c of coins) {
     if (c.collected) continue;
 
@@ -271,7 +305,7 @@ function update() {
       player.y < c.y + c.h &&
       player.y + player.h > c.y
     ) {
-      player.health += 5; // can go above 100
+      player.health += 5;
       c.collected = true;
     }
   }
