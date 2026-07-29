@@ -9,7 +9,8 @@
       background: #87CEFA;
       font-family: Arial;
     }
-    #gameOver {
+
+    #startScreen, #gameOverScreen {
       position: absolute;
       top: 40%;
       left: 50%;
@@ -20,16 +21,34 @@
       text-align: center;
       display: none;
     }
-    #restartBtn {
+
+    button {
       padding: 10px 20px;
       font-size: 20px;
       cursor: pointer;
+    }
+
+    #countdown {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 80px;
+      color: white;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<div id="gameOver">
+<div id="startScreen">
+  <h1>Platformer Survival</h1>
+  <button id="playBtn">Play</button>
+</div>
+
+<div id="countdown">3</div>
+
+<div id="gameOverScreen">
   <h1>Game Over</h1>
   <button id="restartBtn">Restart</button>
 </div>
@@ -46,6 +65,10 @@ function resize() {
 }
 resize();
 window.addEventListener("resize", resize);
+
+/* GAME STATE */
+let gameStarted = false;
+let gameOver = false;
 
 /* PLAYER */
 let player = {
@@ -68,25 +91,40 @@ let speedIncrease = 0.002;
 /* GRAVITY */
 const gravity = 0.8;
 
-/* PLATFORMS */
+/* FLOOR WITH GAPS */
+let floorSegments = [];
+for (let i = 0; i < 50; i++) {
+  if (Math.random() < 0.15) continue; // gap
+  floorSegments.push({
+    x: i * 200,
+    y: canvas.height - 40,
+    w: 200,
+    h: 40
+  });
+}
+
+/* PLATFORMS (some moving) */
 let platforms = [];
 for (let i = 0; i < 20; i++) {
   platforms.push({
     x: i * 300,
     y: canvas.height - (Math.random() * 300 + 100),
     w: 200,
-    h: 20
+    h: 20,
+    moving: Math.random() < 0.3,
+    dir: 1
   });
 }
 
-/* ENEMIES */
+/* ENEMIES (moving) */
 let enemies = [];
 for (let i = 0; i < 15; i++) {
   enemies.push({
     x: i * 300 + 200,
     y: canvas.height - (Math.random() * 300 + 140),
     w: 40,
-    h: 40
+    h: 40,
+    dir: Math.random() < 0.5 ? 1 : -1
   });
 }
 
@@ -106,21 +144,38 @@ let keys = {};
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
-/* GAME OVER */
-let gameOver = false;
+/* START GAME */
+document.getElementById("startScreen").style.display = "block";
 
-function restartGame() {
-  player.x = 100;
-  player.y = 0;
-  player.health = 100;
-  scrollSpeed = 3;
-  gameOver = false;
-  document.getElementById("gameOver").style.display = "none";
+document.getElementById("playBtn").onclick = () => {
+  document.getElementById("startScreen").style.display = "none";
+  startCountdown();
+};
+
+function startCountdown() {
+  let count = 3;
+  const cd = document.getElementById("countdown");
+  cd.style.display = "block";
+  cd.innerText = count;
+
+  let interval = setInterval(() => {
+    count--;
+    cd.innerText = count;
+    if (count === 0) {
+      clearInterval(interval);
+      cd.style.display = "none";
+      gameStarted = true;
+    }
+  }, 1000);
 }
-document.getElementById("restartBtn").onclick = restartGame;
+
+/* RESTART */
+document.getElementById("restartBtn").onclick = () => {
+  location.reload();
+};
 
 function update() {
-  if (gameOver) return;
+  if (!gameStarted || gameOver) return;
 
   /* AUTO SCROLL */
   scrollSpeed += speedIncrease;
@@ -137,16 +192,37 @@ function update() {
     player.grounded = false;
   }
 
-  /* APPLY GRAVITY */
+  /* GRAVITY */
   player.vy += gravity;
 
   /* APPLY VELOCITY */
   player.x += player.vx;
   player.y += player.vy;
 
-  /* COLLISION WITH PLATFORMS */
+  /* FLOOR COLLISION */
   player.grounded = false;
+  for (let f of floorSegments) {
+    if (
+      player.x < f.x + f.w &&
+      player.x + player.w > f.x &&
+      player.y + player.h > f.y &&
+      player.y + player.h < f.y + f.h &&
+      player.vy >= 0
+    ) {
+      player.y = f.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+    }
+  }
+
+  /* PLATFORM COLLISION + MOVING PLATFORMS */
   for (let p of platforms) {
+    if (p.moving) {
+      p.x += p.dir * 2;
+      if (p.x < p.startX - 50) p.dir = 1;
+      if (p.x > p.startX + 50) p.dir = -1;
+    }
+
     if (
       player.x < p.x + p.w &&
       player.x + player.w > p.x &&
@@ -160,8 +236,12 @@ function update() {
     }
   }
 
-  /* ENEMY COLLISION */
+  /* ENEMY MOVEMENT */
   for (let e of enemies) {
+    e.x += e.dir * 2;
+    if (Math.random() < 0.01) e.dir *= -1;
+
+    /* ENEMY DAMAGE */
     if (
       player.x < e.x + e.w &&
       player.x + player.w > e.x &&
@@ -172,7 +252,7 @@ function update() {
     }
   }
 
-  /* COIN COLLECTION */
+  /* COINS */
   for (let c of coins) {
     if (
       player.x < c.x + c.w &&
@@ -185,40 +265,41 @@ function update() {
     }
   }
 
-  /* REMOVE COLLECTED COINS */
   coins = coins.filter(c => !c.collected);
 
-  /* GAME OVER CHECK */
+  /* GAME OVER */
   if (player.health <= 0) {
     gameOver = true;
-    document.getElementById("gameOver").style.display = "block";
+    document.getElementById("gameOverScreen").style.display = "block";
   }
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  /* SKY */
-  ctx.fillStyle = "#87CEFA";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   /* HEALTH BAR */
   ctx.fillStyle = "red";
   ctx.fillRect(20, 20, player.health * 2, 20);
 
-  /* DRAW PLATFORMS */
+  /* FLOOR */
+  ctx.fillStyle = "#444";
+  for (let f of floorSegments) {
+    ctx.fillRect(f.x - player.x + 200, f.y, f.w, f.h);
+  }
+
+  /* PLATFORMS */
   ctx.fillStyle = "#654321";
   for (let p of platforms) {
     ctx.fillRect(p.x - player.x + 200, p.y, p.w, p.h);
   }
 
-  /* DRAW ENEMIES */
+  /* ENEMIES */
   ctx.fillStyle = "purple";
   for (let e of enemies) {
     ctx.fillRect(e.x - player.x + 200, e.y, e.w, e.h);
   }
 
-  /* DRAW COINS */
+  /* COINS */
   ctx.fillStyle = "gold";
   for (let c of coins) {
     ctx.beginPath();
@@ -226,7 +307,7 @@ function draw() {
     ctx.fill();
   }
 
-  /* DRAW PLAYER */
+  /* PLAYER */
   ctx.fillStyle = "red";
   ctx.fillRect(200, player.y, player.w, player.h);
 }
