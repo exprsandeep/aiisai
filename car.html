@@ -1,19 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Platformer Game</title>
+  <title>Platformer Survival Game</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background: #87CEFA; /* sky */
+      background: #87CEFA;
+      font-family: Arial;
     }
-    canvas {
-      display: block;
+    #gameOver {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      display: none;
+    }
+    #restartBtn {
+      padding: 10px 20px;
+      font-size: 20px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
+
+<div id="gameOver">
+  <h1>Game Over</h1>
+  <button id="restartBtn">Restart</button>
+</div>
 
 <canvas id="game"></canvas>
 
@@ -38,29 +57,75 @@ let player = {
   vy: 0,
   speed: 5,
   jumpPower: 15,
-  grounded: false
+  grounded: false,
+  health: 100
 };
+
+/* GAME SPEED */
+let scrollSpeed = 3;
+let speedIncrease = 0.002;
 
 /* GRAVITY */
 const gravity = 0.8;
 
 /* PLATFORMS */
-const platforms = [
-  { x: 0, y: canvas.height - 40, w: 2000, h: 40 }, // ground
-  { x: 300, y: canvas.height - 150, w: 200, h: 20 },
-  { x: 600, y: canvas.height - 250, w: 200, h: 20 },
-  { x: 900, y: canvas.height - 350, w: 200, h: 20 }
-];
+let platforms = [];
+for (let i = 0; i < 20; i++) {
+  platforms.push({
+    x: i * 300,
+    y: canvas.height - (Math.random() * 300 + 100),
+    w: 200,
+    h: 20
+  });
+}
+
+/* ENEMIES */
+let enemies = [];
+for (let i = 0; i < 15; i++) {
+  enemies.push({
+    x: i * 300 + 200,
+    y: canvas.height - (Math.random() * 300 + 140),
+    w: 40,
+    h: 40
+  });
+}
+
+/* COINS */
+let coins = [];
+for (let i = 0; i < 20; i++) {
+  coins.push({
+    x: i * 300 + 150,
+    y: canvas.height - (Math.random() * 300 + 200),
+    w: 20,
+    h: 20
+  });
+}
 
 /* KEYS */
 let keys = {};
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
-/* CAMERA */
-let cameraX = 0;
+/* GAME OVER */
+let gameOver = false;
+
+function restartGame() {
+  player.x = 100;
+  player.y = 0;
+  player.health = 100;
+  scrollSpeed = 3;
+  gameOver = false;
+  document.getElementById("gameOver").style.display = "none";
+}
+document.getElementById("restartBtn").onclick = restartGame;
 
 function update() {
+  if (gameOver) return;
+
+  /* AUTO SCROLL */
+  scrollSpeed += speedIncrease;
+  player.x += scrollSpeed;
+
   /* MOVEMENT */
   if (keys["ArrowRight"]) player.vx = player.speed;
   else if (keys["ArrowLeft"]) player.vx = -player.speed;
@@ -79,7 +144,7 @@ function update() {
   player.x += player.vx;
   player.y += player.vy;
 
-  /* COLLISION */
+  /* COLLISION WITH PLATFORMS */
   player.grounded = false;
   for (let p of platforms) {
     if (
@@ -95,8 +160,39 @@ function update() {
     }
   }
 
-  /* CAMERA FOLLOWS PLAYER */
-  cameraX = player.x - canvas.width / 2;
+  /* ENEMY COLLISION */
+  for (let e of enemies) {
+    if (
+      player.x < e.x + e.w &&
+      player.x + player.w > e.x &&
+      player.y < e.y + e.h &&
+      player.y + player.h > e.y
+    ) {
+      player.health -= 1;
+    }
+  }
+
+  /* COIN COLLECTION */
+  for (let c of coins) {
+    if (
+      player.x < c.x + c.w &&
+      player.x + player.w > c.x &&
+      player.y < c.y + c.h &&
+      player.y + player.h > c.y
+    ) {
+      player.health += 5;
+      c.collected = true;
+    }
+  }
+
+  /* REMOVE COLLECTED COINS */
+  coins = coins.filter(c => !c.collected);
+
+  /* GAME OVER CHECK */
+  if (player.health <= 0) {
+    gameOver = true;
+    document.getElementById("gameOver").style.display = "block";
+  }
 }
 
 function draw() {
@@ -106,15 +202,33 @@ function draw() {
   ctx.fillStyle = "#87CEFA";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  /* HEALTH BAR */
+  ctx.fillStyle = "red";
+  ctx.fillRect(20, 20, player.health * 2, 20);
+
   /* DRAW PLATFORMS */
   ctx.fillStyle = "#654321";
   for (let p of platforms) {
-    ctx.fillRect(p.x - cameraX, p.y, p.w, p.h);
+    ctx.fillRect(p.x - player.x + 200, p.y, p.w, p.h);
+  }
+
+  /* DRAW ENEMIES */
+  ctx.fillStyle = "purple";
+  for (let e of enemies) {
+    ctx.fillRect(e.x - player.x + 200, e.y, e.w, e.h);
+  }
+
+  /* DRAW COINS */
+  ctx.fillStyle = "gold";
+  for (let c of coins) {
+    ctx.beginPath();
+    ctx.arc(c.x - player.x + 200, c.y, 10, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   /* DRAW PLAYER */
   ctx.fillStyle = "red";
-  ctx.fillRect(player.x - cameraX, player.y, player.w, player.h);
+  ctx.fillRect(200, player.y, player.w, player.h);
 }
 
 function loop() {
