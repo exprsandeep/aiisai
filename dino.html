@@ -15,26 +15,35 @@
       background: white;
       border-top: 4px solid black;
     }
-    #playBtn, #restartBtn {
+    #playBtn, #restartBtn, #pauseBtn, #resumeBtn, #jumpBtn {
       padding: 15px 30px;
       font-size: 22px;
-      margin-top: 50px;
+      margin: 10px;
       cursor: pointer;
     }
-    #restartBtn {
+    #restartBtn, #pauseBtn, #resumeBtn, #jumpBtn {
       display: none;
     }
   </style>
 </head>
 <body>
   <h1>Dino Jump Game</h1>
+
   <button id="playBtn">Play</button>
   <button id="restartBtn">Restart</button>
+  <button id="pauseBtn">Pause</button>
+  <button id="resumeBtn">Resume</button>
+  <button id="jumpBtn">Jump</button>
+
   <canvas id="gameCanvas"></canvas>
 
   <script>
     const playBtn = document.getElementById("playBtn");
     const restartBtn = document.getElementById("restartBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const jumpBtn = document.getElementById("jumpBtn");
+
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
@@ -42,10 +51,12 @@
     canvas.height = 300;
 
     let dino, obstacles, speed, gameOver, score;
+    let paused = false;
+    let animationFrame;
 
     // Load Chrome Dino sprite
     const dinoImg = new Image();
-    dinoImg.src = "https://i.imgur.com/4LGAZ8t.png"; // transparent Chrome Dino sprite
+    dinoImg.src = "https://i.imgur.com/4LGAZ8t.png";
 
     function init() {
       dino = { x:50, y:250, width:60, height:60, dy:0, jumping:false };
@@ -53,6 +64,7 @@
       speed = 5;
       gameOver = false;
       score = 0;
+      paused = false;
     }
 
     function drawDino() {
@@ -71,6 +83,8 @@
     }
 
     function update() {
+      if (paused) return;
+
       ctx.clearRect(0,0,canvas.width,canvas.height);
       drawDino();
       drawObstacles();
@@ -114,10 +128,10 @@
       // increase score
       score++;
 
-      // gradually increase speed every frame
-      speed = Math.min(speed + 0.002, 15); // cap max speed at 15
+      // gradually increase speed
+      speed = Math.min(speed + 0.002, 15);
 
-      requestAnimationFrame(update);
+      animationFrame = requestAnimationFrame(update);
     }
 
     function spawnObstacle() {
@@ -125,16 +139,15 @@
         const height = 40;
         const lastObstacle = obstacles[obstacles.length - 1];
 
-        // Only spawn if last obstacle is far enough away
         if (!lastObstacle || lastObstacle.x < canvas.width - 200) {
           obstacles.push({ x: canvas.width, y: 260, width:30, height:height });
         }
 
-        // Spawn again after 2–4 seconds
         setTimeout(spawnObstacle, 2000 + Math.random()*2000);
       }
     }
 
+    // Keyboard jump
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && !dino.jumping && !gameOver) {
         dino.jumping = true;
@@ -142,14 +155,43 @@
       }
     });
 
+    // Mobile jump button
+    jumpBtn.addEventListener("click", () => {
+      if (!dino.jumping && !gameOver) {
+        dino.jumping = true;
+        dino.dy = -15;
+      }
+    });
+
+    // Pause
+    pauseBtn.addEventListener("click", () => {
+      paused = true;
+      cancelAnimationFrame(animationFrame);
+    });
+
+    // Resume
+    resumeBtn.addEventListener("click", () => {
+      if (paused && !gameOver) {
+        paused = false;
+        update();
+      }
+    });
+
+    // Play button
     playBtn.addEventListener("click", () => {
       playBtn.style.display = "none";
       canvas.style.display = "block";
+
+      pauseBtn.style.display = "inline-block";
+      resumeBtn.style.display = "inline-block";
+      jumpBtn.style.display = "inline-block";
+
       init();
       update();
       spawnObstacle();
     });
 
+    // Restart button
     restartBtn.addEventListener("click", () => {
       restartBtn.style.display = "none";
       init();
