@@ -6,15 +6,19 @@
     body {
       margin: 0;
       background-color: skyblue;
-      overflow: hidden;
+      overflow-x: hidden;
       text-align: center;
       font-family: Arial, sans-serif;
     }
 
     #gameCanvas {
-      display: none;
       background: white;
       border-top: 4px solid black;
+      display: none;
+    }
+
+    .controls {
+      margin-top: 20px;
     }
 
     button {
@@ -24,7 +28,6 @@
       cursor: pointer;
     }
 
-    /* ONLY restart is hidden at start */
     #restartBtn {
       display: none;
     }
@@ -35,12 +38,16 @@
   <h1>Dino Jump Game</h1>
 
   <button id="playBtn">Play</button>
-  <button id="restartBtn">Restart</button>
-  <button id="pauseBtn">Pause</button>
-  <button id="resumeBtn">Resume</button>
-  <button id="jumpBtn">Jump</button>
 
   <canvas id="gameCanvas"></canvas>
+
+  <!-- ⭐ BUTTONS BELOW THE GAME ⭐ -->
+  <div class="controls">
+    <button id="pauseBtn">Pause</button>
+    <button id="resumeBtn">Resume</button>
+    <button id="jumpBtn">Jump</button>
+    <button id="restartBtn">Restart</button>
+  </div>
 
   <script>
     const playBtn = document.getElementById("playBtn");
@@ -163,10 +170,6 @@
     playBtn.addEventListener("click", () => {
       playBtn.style.display = "none";
       canvas.style.display = "block";
-
-      pauseBtn.style.display = "inline-block";
-      resumeBtn.style.display = "inline-block";
-      jumpBtn.style.display = "inline-block";
 
       init();
       update();
