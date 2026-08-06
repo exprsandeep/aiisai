@@ -24,7 +24,8 @@
       cursor: pointer;
     }
 
-    #restartBtn, #pauseBtn, #resumeBtn, #jumpBtn {
+    /* ONLY restart is hidden at start */
+    #restartBtn {
       display: none;
     }
   </style>
@@ -82,19 +83,15 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Dino
       ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
 
-      // Draw obstacles
       ctx.fillStyle = "brown";
       obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
 
-      // Draw score
       ctx.fillStyle = "black";
       ctx.font = "20px Arial";
       ctx.fillText("Score: " + score, 20, 30);
 
-      // Gravity
       if (dino.jumping) {
         dino.y += dino.dy;
         dino.dy += 1;
@@ -106,13 +103,9 @@
         }
       }
 
-      // Move obstacles
       obstacles.forEach(o => o.x -= speed);
-
-      // Remove off-screen obstacles
       obstacles = obstacles.filter(o => o.x + o.width > 0);
 
-      // Collision detection
       obstacles.forEach(o => {
         if (
           dino.x < o.x + o.width &&
@@ -132,7 +125,6 @@
         return;
       }
 
-      // Score + speed
       score++;
       speed = Math.min(speed + 0.002, 15);
 
@@ -150,21 +142,17 @@
       setTimeout(spawnObstacle, 2000 + Math.random() * 2000);
     }
 
-    // Keyboard jump
     document.addEventListener("keydown", e => {
       if (e.code === "Space") jump();
     });
 
-    // Mobile jump button
     jumpBtn.addEventListener("click", jump);
 
-    // Pause
     pauseBtn.addEventListener("click", () => {
       paused = true;
       cancelAnimationFrame(animationFrame);
     });
 
-    // Resume
     resumeBtn.addEventListener("click", () => {
       if (!gameOver) {
         paused = false;
@@ -172,7 +160,6 @@
       }
     });
 
-    // Play
     playBtn.addEventListener("click", () => {
       playBtn.style.display = "none";
       canvas.style.display = "block";
@@ -186,7 +173,6 @@
       spawnObstacle();
     });
 
-    // Restart
     restartBtn.addEventListener("click", () => {
       restartBtn.style.display = "none";
       init();
