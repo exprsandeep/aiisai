@@ -1,60 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Platformer Survival Game</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #87CEFA;
-      font-family: Arial;
-    }
-
-    #startScreen, #gameOverScreen {
-      position: absolute;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      text-align: center;
-      display: none;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    #countdown {
-      position: absolute;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 80px;
-      color: white;
-      display: none;
-    }
-  </style>
-</head>
-<body>
-
-<div id="startScreen">
-  <h1>Platformer Survival</h1>
-  <button id="playBtn">Play</button>
-</div>
-
-<div id="countdown">3</div>
-
-<div id="gameOverScreen">
-  <h1>Game Over</h1>
-  <button id="restartBtn">Restart</button>
-</div>
-
-<canvas id="game"></canvas>
-
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -91,90 +34,82 @@ let speedIncrease = 0.002;
 /* GRAVITY */
 const gravity = 0.8;
 
-/* FLOOR WITH GAPS */
+/* WORLD OBJECTS */
 let floorSegments = [];
-let gapPositions = [];
-
-for (let i = 0; i < 50; i++) {
-  if (Math.random() < 0.20) {
-    gapPositions.push(i * 200);
-    continue;
-  }
-  floorSegments.push({
-    x: i * 200,
-    y: canvas.height - 40,
-    w: 200,
-    h: 40
-  });
-}
-
-/* PLATFORMS ABOVE GAPS */
 let platforms = [];
+let enemies = [];
+let coins = [];
 
-for (let gapX of gapPositions) {
-  let height = canvas.height - 150;
+/* ENDLESS WORLD */
+let nextChunkX = 0;
+const chunkWidth = 200;
+const generateAhead = 2500;
+const deleteBehind = 1000;
 
-  // Always place at least one platform above the gap
-  platforms.push({
-    x: gapX,
-    y: height,
-    w: 200,
-    h: 20,
-    moving: Math.random() < 0.3,
-    dir: 1,
-    startX: gapX
-  });
+/* CREATE A NEW WORLD CHUNK */
+function generateChunk(x) {
+  const isGap = Math.random() < 0.18;
 
-  // If gap is big, add extra platforms stacked upward
-  if (Math.random() < 0.5) {
+  if (!isGap) {
+    floorSegments.push({
+      x: x,
+      y: canvas.height - 40,
+      w: chunkWidth,
+      h: 40
+    });
+  } else {
+    /* PLATFORM OVER THE GAP */
     platforms.push({
-      x: gapX + 50,
-      y: height - 120,
-      w: 150,
+      x: x + 20,
+      y: canvas.height - 150,
+      w: 160,
       h: 20,
-      moving: Math.random() < 0.3,
+      moving: Math.random() < 0.25,
       dir: 1,
-      startX: gapX + 50
+      startX: x + 20
+    });
+  }
+
+  /* RANDOM EXTRA PLATFORM */
+  if (Math.random() < 0.35) {
+    platforms.push({
+      x: x + Math.random() * 80,
+      y: canvas.height - (Math.random() * 220 + 120),
+      w: 120 + Math.random() * 100,
+      h: 20,
+      moving: Math.random() < 0.2,
+      dir: 1,
+      startX: x
+    });
+  }
+
+  /* RANDOM ENEMY */
+  if (Math.random() < 0.35) {
+    enemies.push({
+      x: x + 80,
+      y: canvas.height - 80,
+      w: 40,
+      h: 40,
+      dir: Math.random() < 0.5 ? 1 : -1
+    });
+  }
+
+  /* RANDOM COIN */
+  if (Math.random() < 0.55) {
+    coins.push({
+      x: x + 100,
+      y: canvas.height - (Math.random() * 220 + 100),
+      w: 20,
+      h: 20,
+      collected: false
     });
   }
 }
 
-/* EXTRA RANDOM PLATFORMS */
+/* GENERATE STARTING WORLD */
 for (let i = 0; i < 20; i++) {
-  const x = i * 300;
-  platforms.push({
-    x: x,
-    y: canvas.height - (Math.random() * 300 + 100),
-    w: 200,
-    h: 20,
-    moving: Math.random() < 0.2,
-    dir: 1,
-    startX: x
-  });
-}
-
-/* ENEMIES */
-let enemies = [];
-for (let i = 0; i < 20; i++) {
-  enemies.push({
-    x: i * 250 + 200,
-    y: canvas.height - (Math.random() * 300 + 140),
-    w: 40,
-    h: 40,
-    dir: Math.random() < 0.5 ? 1 : -1
-  });
-}
-
-/* COINS */
-let coins = [];
-for (let i = 0; i < 30; i++) {
-  coins.push({
-    x: i * 250 + 150,
-    y: canvas.height - (Math.random() * 300 + 200),
-    w: 20,
-    h: 20,
-    collected: false
-  });
+  generateChunk(nextChunkX);
+  nextChunkX += chunkWidth;
 }
 
 /* KEYS */
@@ -199,6 +134,7 @@ function startCountdown() {
   let interval = setInterval(() => {
     count--;
     cd.innerText = count;
+
     if (count === 0) {
       clearInterval(interval);
       cd.style.display = "none";
@@ -215,14 +151,41 @@ document.getElementById("restartBtn").onclick = () => {
 function update() {
   if (!gameStarted || gameOver) return;
 
+  /* ENDLESS WORLD GENERATION */
+  while (nextChunkX < player.x + generateAhead) {
+    generateChunk(nextChunkX);
+    nextChunkX += chunkWidth;
+  }
+
+  /* REMOVE OLD WORLD BEHIND PLAYER */
+  floorSegments = floorSegments.filter(
+    f => f.x + f.w > player.x - deleteBehind
+  );
+
+  platforms = platforms.filter(
+    p => p.x + p.w > player.x - deleteBehind
+  );
+
+  enemies = enemies.filter(
+    e => e.x + e.w > player.x - deleteBehind
+  );
+
+  coins = coins.filter(
+    c => c.x + c.w > player.x - deleteBehind
+  );
+
   /* AUTO SCROLL */
   scrollSpeed += speedIncrease;
   player.x += scrollSpeed;
 
   /* MOVEMENT */
-  if (keys["ArrowRight"]) player.vx = player.speed;
-  else if (keys["ArrowLeft"]) player.vx = -player.speed;
-  else player.vx = 0;
+  if (keys["ArrowRight"]) {
+    player.vx = player.speed;
+  } else if (keys["ArrowLeft"]) {
+    player.vx = -player.speed;
+  } else {
+    player.vx = 0;
+  }
 
   /* JUMP */
   if (keys[" "] && player.grounded) {
@@ -237,7 +200,7 @@ function update() {
   player.x += player.vx;
   player.y += player.vy;
 
-  /* FALLING INTO GAP = GAME OVER */
+  /* FALLING INTO GAP */
   if (player.y > canvas.height) {
     gameOver = true;
     document.getElementById("gameOverScreen").style.display = "block";
@@ -245,6 +208,7 @@ function update() {
 
   /* FLOOR COLLISION */
   player.grounded = false;
+
   for (let f of floorSegments) {
     if (
       player.x < f.x + f.w &&
@@ -259,12 +223,18 @@ function update() {
     }
   }
 
-  /* PLATFORM COLLISION + MOVING PLATFORMS */
+  /* PLATFORM COLLISION */
   for (let p of platforms) {
     if (p.moving) {
       p.x += p.dir * 2;
-      if (p.x < p.startX - 60) p.dir = 1;
-      if (p.x > p.startX + 60) p.dir = -1;
+
+      if (p.x < p.startX - 60) {
+        p.dir = 1;
+      }
+
+      if (p.x > p.startX + 60) {
+        p.dir = -1;
+      }
     }
 
     if (
@@ -283,7 +253,10 @@ function update() {
   /* ENEMY MOVEMENT + DAMAGE */
   for (let e of enemies) {
     e.x += e.dir * 2;
-    if (Math.random() < 0.01) e.dir *= -1;
+
+    if (Math.random() < 0.01) {
+      e.dir *= -1;
+    }
 
     if (
       player.x < e.x + e.w &&
@@ -306,12 +279,18 @@ function update() {
       player.y + player.h > c.y
     ) {
       player.health += 5;
+
+      if (player.health > 100) {
+        player.health = 100;
+      }
+
       c.collected = true;
     }
   }
 
   /* GAME OVER BY HEALTH */
   if (player.health <= 0) {
+    player.health = 0;
     gameOver = true;
     document.getElementById("gameOverScreen").style.display = "block";
   }
@@ -320,40 +299,84 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  /* HEALTH BAR BACKGROUND */
+  ctx.fillStyle = "#555";
+  ctx.fillRect(20, 20, 200, 20);
+
   /* HEALTH BAR */
   ctx.fillStyle = "red";
   ctx.fillRect(20, 20, player.health * 2, 20);
 
+  /* HEALTH TEXT */
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText(
+    "Health: " + Math.round(player.health) + "%",
+    20,
+    65
+  );
+
   /* FLOOR */
   ctx.fillStyle = "#444";
+
   for (let f of floorSegments) {
-    ctx.fillRect(f.x - player.x + 200, f.y, f.w, f.h);
+    ctx.fillRect(
+      f.x - player.x + 200,
+      f.y,
+      f.w,
+      f.h
+    );
   }
 
   /* PLATFORMS */
   ctx.fillStyle = "#654321";
+
   for (let p of platforms) {
-    ctx.fillRect(p.x - player.x + 200, p.y, p.w, p.h);
+    ctx.fillRect(
+      p.x - player.x + 200,
+      p.y,
+      p.w,
+      p.h
+    );
   }
 
   /* ENEMIES */
   ctx.fillStyle = "purple";
+
   for (let e of enemies) {
-    ctx.fillRect(e.x - player.x + 200, e.y, e.w, e.h);
+    ctx.fillRect(
+      e.x - player.x + 200,
+      e.y,
+      e.w,
+      e.h
+    );
   }
 
   /* COINS */
   ctx.fillStyle = "gold";
+
   for (let c of coins) {
     if (c.collected) continue;
+
     ctx.beginPath();
-    ctx.arc(c.x - player.x + 200, c.y, 10, 0, Math.PI * 2);
+    ctx.arc(
+      c.x - player.x + 200,
+      c.y,
+      10,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
   }
 
   /* PLAYER */
   ctx.fillStyle = "red";
-  ctx.fillRect(200, player.y, player.w, player.h);
+  ctx.fillRect(
+    200,
+    player.y,
+    player.w,
+    player.h
+  );
 }
 
 function loop() {
@@ -364,6 +387,3 @@ function loop() {
 
 loop();
 </script>
-
-</body>
-</html>
