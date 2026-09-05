@@ -1,4 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Platformer Survival Game</title>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #87CEFA;
+      font-family: Arial;
+    }
+
+    #startScreen,
+    #gameOverScreen {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      z-index: 10;
+      display: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    #countdown {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 80px;
+      color: white;
+      z-index: 10;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="startScreen">
+  <h1>Platformer Survival</h1>
+  <button id="playBtn">Play</button>
+</div>
+
+<div id="countdown">3</div>
+
+<div id="gameOverScreen">
+  <h1>Game Over</h1>
+  <button id="restartBtn">Restart</button>
+</div>
+
+<canvas id="game"></canvas>
+
 <script>
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
@@ -6,384 +69,896 @@ function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
+
 resize();
+
 window.addEventListener("resize", resize);
 
-/* GAME STATE */
+
+/* =========================
+   GAME STATE
+========================= */
+
 let gameStarted = false;
 let gameOver = false;
 
-/* PLAYER */
+
+/* =========================
+   PLAYER
+========================= */
+
 let player = {
   x: 100,
-  y: 0,
+  y: canvas.height - 100,
   w: 40,
   h: 60,
+
   vx: 0,
   vy: 0,
+
   speed: 5,
   jumpPower: 15,
+
   grounded: false,
+
   health: 100
 };
 
-/* GAME SPEED */
-let scrollSpeed = 3;
-let speedIncrease = 0.002;
 
-/* GRAVITY */
+/* =========================
+   PHYSICS
+========================= */
+
 const gravity = 0.8;
 
-/* WORLD OBJECTS */
+let scrollSpeed = 3;
+let speedIncrease = 0.0005;
+
+
+/* =========================
+   WORLD
+========================= */
+
 let floorSegments = [];
 let platforms = [];
 let enemies = [];
 let coins = [];
 
-/* ENDLESS WORLD */
-let nextChunkX = 0;
 const chunkWidth = 200;
-const generateAhead = 2500;
-const deleteBehind = 1000;
 
-/* CREATE A NEW WORLD CHUNK */
+let nextChunkX = 0;
+
+const generateDistance = 3000;
+const deleteDistance = 1200;
+
+
+/* =========================
+   CREATE WORLD CHUNK
+========================= */
+
 function generateChunk(x) {
-  const isGap = Math.random() < 0.18;
 
-  if (!isGap) {
+  /*
+     Make gaps sometimes.
+     BUT don't make gaps near
+     the start of the game.
+  */
+
+  let gap = false;
+
+  if (x > 800) {
+    gap = Math.random() < 0.18;
+  }
+
+
+  /* FLOOR */
+
+  if (!gap) {
+
     floorSegments.push({
       x: x,
       y: canvas.height - 40,
       w: chunkWidth,
       h: 40
     });
+
   } else {
-    /* PLATFORM OVER THE GAP */
+
+    /*
+       PLATFORM OVER GAP
+    */
+
     platforms.push({
       x: x + 20,
       y: canvas.height - 150,
+
       w: 160,
       h: 20,
-      moving: Math.random() < 0.25,
+
+      moving: false,
+
       dir: 1,
       startX: x + 20
     });
+
   }
 
-  /* RANDOM EXTRA PLATFORM */
+
+  /* RANDOM HIGH PLATFORM */
+
   if (Math.random() < 0.35) {
+
+    const px = x + 30;
+
     platforms.push({
-      x: x + Math.random() * 80,
-      y: canvas.height - (Math.random() * 220 + 120),
-      w: 120 + Math.random() * 100,
+
+      x: px,
+
+      y:
+        canvas.height -
+        (Math.random() * 200 + 140),
+
+      w: 140,
       h: 20,
+
       moving: Math.random() < 0.2,
+
       dir: 1,
-      startX: x
+
+      startX: px
+
     });
+
   }
 
-  /* RANDOM ENEMY */
-  if (Math.random() < 0.35) {
+
+  /*
+     ENEMY
+
+     Only spawn enemy if
+     there is FLOOR.
+  */
+
+  if (!gap && Math.random() < 0.30) {
+
     enemies.push({
-      x: x + 80,
+
+      x: x + 100,
+
       y: canvas.height - 80,
+
       w: 40,
       h: 40,
-      dir: Math.random() < 0.5 ? 1 : -1
+
+      dir:
+        Math.random() < 0.5
+        ? 1
+        : -1
+
     });
+
   }
 
-  /* RANDOM COIN */
+
+  /* COIN */
+
   if (Math.random() < 0.55) {
+
     coins.push({
+
       x: x + 100,
-      y: canvas.height - (Math.random() * 220 + 100),
+
+      y:
+        canvas.height -
+        (Math.random() * 180 + 100),
+
       w: 20,
       h: 20,
+
       collected: false
+
     });
+
   }
+
 }
 
-/* GENERATE STARTING WORLD */
+
+/* =========================
+   GENERATE STARTING WORLD
+========================= */
+
 for (let i = 0; i < 20; i++) {
+
   generateChunk(nextChunkX);
+
   nextChunkX += chunkWidth;
+
 }
 
-/* KEYS */
+
+/* =========================
+   CONTROLS
+========================= */
+
 let keys = {};
-document.addEventListener("keydown", e => keys[e.key] = true);
-document.addEventListener("keyup", e => keys[e.key] = false);
 
-/* START SCREEN */
-document.getElementById("startScreen").style.display = "block";
+document.addEventListener(
+  "keydown",
+  function(e) {
 
-document.getElementById("playBtn").onclick = () => {
-  document.getElementById("startScreen").style.display = "none";
+    keys[e.key] = true;
+
+    /*
+       Stop browser scrolling
+       when SPACE is pressed
+    */
+
+    if (e.key === " ") {
+      e.preventDefault();
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "keyup",
+  function(e) {
+
+    keys[e.key] = false;
+
+  }
+);
+
+
+/* =========================
+   START SCREEN
+========================= */
+
+const startScreen =
+  document.getElementById("startScreen");
+
+const countdown =
+  document.getElementById("countdown");
+
+const gameOverScreen =
+  document.getElementById("gameOverScreen");
+
+
+startScreen.style.display = "block";
+
+
+document.getElementById("playBtn").onclick =
+function() {
+
+  startScreen.style.display = "none";
+
   startCountdown();
+
 };
+
+
+/* =========================
+   COUNTDOWN
+========================= */
 
 function startCountdown() {
+
   let count = 3;
-  const cd = document.getElementById("countdown");
-  cd.style.display = "block";
-  cd.innerText = count;
 
-  let interval = setInterval(() => {
-    count--;
-    cd.innerText = count;
+  countdown.style.display = "block";
 
-    if (count === 0) {
-      clearInterval(interval);
-      cd.style.display = "none";
-      gameStarted = true;
-    }
-  }, 1000);
+  countdown.innerText = count;
+
+
+  const timer = setInterval(
+    function() {
+
+      count--;
+
+      if (count > 0) {
+
+        countdown.innerText = count;
+
+      } else {
+
+        clearInterval(timer);
+
+        countdown.style.display =
+          "none";
+
+        gameStarted = true;
+
+      }
+
+    },
+    1000
+  );
+
 }
 
-/* RESTART BUTTON */
-document.getElementById("restartBtn").onclick = () => {
+
+/* =========================
+   RESTART
+========================= */
+
+document.getElementById(
+  "restartBtn"
+).onclick =
+function() {
+
   location.reload();
+
 };
 
-function update() {
-  if (!gameStarted || gameOver) return;
 
-  /* ENDLESS WORLD GENERATION */
-  while (nextChunkX < player.x + generateAhead) {
-    generateChunk(nextChunkX);
-    nextChunkX += chunkWidth;
+/* =========================
+   UPDATE
+========================= */
+
+function update() {
+
+  if (!gameStarted || gameOver) {
+    return;
   }
 
-  /* REMOVE OLD WORLD BEHIND PLAYER */
-  floorSegments = floorSegments.filter(
-    f => f.x + f.w > player.x - deleteBehind
-  );
 
-  platforms = platforms.filter(
-    p => p.x + p.w > player.x - deleteBehind
-  );
+  /* =====================
+     CREATE ENDLESS WORLD
+  ===================== */
 
-  enemies = enemies.filter(
-    e => e.x + e.w > player.x - deleteBehind
-  );
+  while (
+    nextChunkX <
+    player.x + generateDistance
+  ) {
 
-  coins = coins.filter(
-    c => c.x + c.w > player.x - deleteBehind
-  );
+    generateChunk(nextChunkX);
 
-  /* AUTO SCROLL */
+    nextChunkX += chunkWidth;
+
+  }
+
+
+  /* =====================
+     REMOVE OLD OBJECTS
+  ===================== */
+
+  floorSegments =
+    floorSegments.filter(
+      f =>
+      f.x + f.w >
+      player.x - deleteDistance
+    );
+
+
+  platforms =
+    platforms.filter(
+      p =>
+      p.x + p.w >
+      player.x - deleteDistance
+    );
+
+
+  enemies =
+    enemies.filter(
+      e =>
+      e.x + e.w >
+      player.x - deleteDistance
+    );
+
+
+  coins =
+    coins.filter(
+      c =>
+      c.x + c.w >
+      player.x - deleteDistance
+    );
+
+
+  /* =====================
+     AUTO MOVEMENT
+  ===================== */
+
   scrollSpeed += speedIncrease;
+
   player.x += scrollSpeed;
 
-  /* MOVEMENT */
+
+  /* =====================
+     LEFT / RIGHT
+  ===================== */
+
   if (keys["ArrowRight"]) {
+
     player.vx = player.speed;
+
   } else if (keys["ArrowLeft"]) {
+
     player.vx = -player.speed;
+
   } else {
+
     player.vx = 0;
+
   }
 
-  /* JUMP */
-  if (keys[" "] && player.grounded) {
-    player.vy = -player.jumpPower;
+
+  /* =====================
+     JUMP
+  ===================== */
+
+  if (
+    keys[" "] &&
+    player.grounded
+  ) {
+
+    player.vy =
+      -player.jumpPower;
+
     player.grounded = false;
+
   }
 
-  /* GRAVITY */
+
+  /* =====================
+     GRAVITY
+  ===================== */
+
   player.vy += gravity;
 
-  /* APPLY VELOCITY */
+
+  /* =====================
+     MOVE PLAYER
+  ===================== */
+
   player.x += player.vx;
+
   player.y += player.vy;
 
-  /* FALLING INTO GAP */
-  if (player.y > canvas.height) {
-    gameOver = true;
-    document.getElementById("gameOverScreen").style.display = "block";
-  }
 
-  /* FLOOR COLLISION */
+  /* =====================
+     FLOOR COLLISION
+  ===================== */
+
   player.grounded = false;
 
+
   for (let f of floorSegments) {
+
     if (
-      player.x < f.x + f.w &&
-      player.x + player.w > f.x &&
-      player.y + player.h > f.y &&
-      player.y + player.h < f.y + f.h &&
+
+      player.x + player.w >
+      f.x &&
+
+      player.x <
+      f.x + f.w &&
+
+      player.y + player.h >=
+      f.y &&
+
+      player.y + player.h <=
+      f.y + 25 &&
+
       player.vy >= 0
+
     ) {
-      player.y = f.y - player.h;
+
+      player.y =
+        f.y - player.h;
+
       player.vy = 0;
+
       player.grounded = true;
+
     }
+
   }
 
-  /* PLATFORM COLLISION */
+
+  /* =====================
+     PLATFORMS
+  ===================== */
+
   for (let p of platforms) {
+
     if (p.moving) {
+
       p.x += p.dir * 2;
 
-      if (p.x < p.startX - 60) {
+
+      if (
+        p.x <
+        p.startX - 60
+      ) {
+
         p.dir = 1;
+
       }
 
-      if (p.x > p.startX + 60) {
+
+      if (
+        p.x >
+        p.startX + 60
+      ) {
+
         p.dir = -1;
+
       }
+
     }
 
+
     if (
-      player.x < p.x + p.w &&
-      player.x + player.w > p.x &&
-      player.y + player.h > p.y &&
-      player.y + player.h < p.y + p.h &&
+
+      player.x + player.w >
+      p.x &&
+
+      player.x <
+      p.x + p.w &&
+
+      player.y + player.h >=
+      p.y &&
+
+      player.y + player.h <=
+      p.y + 25 &&
+
       player.vy >= 0
+
     ) {
-      player.y = p.y - player.h;
+
+      player.y =
+        p.y - player.h;
+
       player.vy = 0;
+
       player.grounded = true;
+
     }
+
   }
 
-  /* ENEMY MOVEMENT + DAMAGE */
+
+  /* =====================
+     ENEMIES
+  ===================== */
+
   for (let e of enemies) {
-    e.x += e.dir * 2;
 
-    if (Math.random() < 0.01) {
-      e.dir *= -1;
-    }
+    e.x += e.dir * 1.5;
+
 
     if (
-      player.x < e.x + e.w &&
-      player.x + player.w > e.x &&
-      player.y < e.y + e.h &&
-      player.y + player.h > e.y
+      Math.random() <
+      0.005
     ) {
-      player.health -= 1;
+
+      e.dir *= -1;
+
     }
+
+
+    if (
+
+      player.x <
+      e.x + e.w &&
+
+      player.x + player.w >
+      e.x &&
+
+      player.y <
+      e.y + e.h &&
+
+      player.y + player.h >
+      e.y
+
+    ) {
+
+      player.health -= 0.5;
+
+    }
+
   }
 
-  /* COINS */
+
+  /* =====================
+     COINS
+  ===================== */
+
   for (let c of coins) {
-    if (c.collected) continue;
+
+    if (c.collected) {
+      continue;
+    }
+
 
     if (
-      player.x < c.x + c.w &&
-      player.x + player.w > c.x &&
-      player.y < c.y + c.h &&
-      player.y + player.h > c.y
-    ) {
-      player.health += 5;
 
-      if (player.health > 100) {
-        player.health = 100;
-      }
+      player.x <
+      c.x + c.w &&
+
+      player.x + player.w >
+      c.x &&
+
+      player.y <
+      c.y + c.h &&
+
+      player.y + player.h >
+      c.y
+
+    ) {
 
       c.collected = true;
+
+      player.health += 5;
+
+
+      if (
+        player.health > 100
+      ) {
+
+        player.health = 100;
+
+      }
+
     }
+
   }
 
-  /* GAME OVER BY HEALTH */
-  if (player.health <= 0) {
-    player.health = 0;
-    gameOver = true;
-    document.getElementById("gameOverScreen").style.display = "block";
+
+  /* =====================
+     FALL INTO GAP
+  ===================== */
+
+  if (
+    player.y >
+    canvas.height + 100
+  ) {
+
+    endGame();
+
   }
+
+
+  /* =====================
+     HEALTH GAME OVER
+  ===================== */
+
+  if (
+    player.health <= 0
+  ) {
+
+    player.health = 0;
+
+    endGame();
+
+  }
+
 }
+
+
+/* =========================
+   END GAME
+========================= */
+
+function endGame() {
+
+  gameOver = true;
+
+  gameOverScreen.style.display =
+    "block";
+
+}
+
+
+/* =========================
+   DRAW
+========================= */
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  /* HEALTH BAR BACKGROUND */
-  ctx.fillStyle = "#555";
-  ctx.fillRect(20, 20, 200, 20);
-
-  /* HEALTH BAR */
-  ctx.fillStyle = "red";
-  ctx.fillRect(20, 20, player.health * 2, 20);
-
-  /* HEALTH TEXT */
-  ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
-  ctx.fillText(
-    "Health: " + Math.round(player.health) + "%",
-    20,
-    65
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
   );
 
-  /* FLOOR */
+
+  /* =====================
+     FLOOR
+  ===================== */
+
   ctx.fillStyle = "#444";
 
+
   for (let f of floorSegments) {
+
     ctx.fillRect(
+
       f.x - player.x + 200,
+
       f.y,
+
       f.w,
+
       f.h
+
     );
+
   }
 
-  /* PLATFORMS */
+
+  /* =====================
+     PLATFORMS
+  ===================== */
+
   ctx.fillStyle = "#654321";
 
+
   for (let p of platforms) {
+
     ctx.fillRect(
+
       p.x - player.x + 200,
+
       p.y,
+
       p.w,
+
       p.h
+
     );
+
   }
 
-  /* ENEMIES */
+
+  /* =====================
+     ENEMIES
+  ===================== */
+
   ctx.fillStyle = "purple";
 
+
   for (let e of enemies) {
+
     ctx.fillRect(
+
       e.x - player.x + 200,
+
       e.y,
+
       e.w,
+
       e.h
+
     );
+
   }
 
-  /* COINS */
-  ctx.fillStyle = "gold";
+
+  /* =====================
+     COINS
+  ===================== */
 
   for (let c of coins) {
-    if (c.collected) continue;
+
+    if (c.collected) {
+      continue;
+    }
+
+
+    ctx.fillStyle = "gold";
 
     ctx.beginPath();
+
     ctx.arc(
+
       c.x - player.x + 200,
+
       c.y,
+
       10,
+
       0,
+
       Math.PI * 2
+
     );
+
     ctx.fill();
+
   }
 
-  /* PLAYER */
+
+  /* =====================
+     PLAYER
+  ===================== */
+
   ctx.fillStyle = "red";
+
   ctx.fillRect(
+
     200,
+
     player.y,
+
     player.w,
+
     player.h
+
   );
+
+
+  /* =====================
+     HEALTH BAR
+  ===================== */
+
+  ctx.fillStyle = "#333";
+
+  ctx.fillRect(
+    20,
+    20,
+    204,
+    24
+  );
+
+
+  ctx.fillStyle = "red";
+
+  ctx.fillRect(
+
+    22,
+
+    22,
+
+    player.health * 2,
+
+    20
+
+  );
+
+
+  /* HEALTH NUMBER */
+
+  ctx.fillStyle = "white";
+
+  ctx.font =
+    "bold 20px Arial";
+
+  ctx.fillText(
+
+    "Health: " +
+    Math.round(player.health) +
+    "%",
+
+    20,
+
+    70
+
+  );
+
 }
+
+
+/* =========================
+   GAME LOOP
+========================= */
 
 function loop() {
+
   update();
+
   draw();
+
   requestAnimationFrame(loop);
+
 }
 
+
 loop();
+
 </script>
+
+</body>
+</html>
