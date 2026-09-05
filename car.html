@@ -103,9 +103,6 @@ let difficulty = 8;
 
 let nextDifficultyScore = 1000;
 
-/*
-  Damage per enemy touch.
-*/
 let enemyDamage = 1;
 
 
@@ -117,9 +114,6 @@ let invincible = false;
 
 const invincibleTime = 600;
 
-/*
-  Used for one quick flash.
-*/
 let hitFlash = false;
 
 
@@ -193,7 +187,6 @@ function generateChunk(x) {
 
   let gap = false;
 
-
   if (x > 800) {
     gap = Math.random() < gapChance;
   }
@@ -214,7 +207,8 @@ function generateChunk(x) {
 
   } else {
 
-    platforms.push({
+    const gapPlatform = {
+
       x: x + 20,
       y: canvas.height - 150,
 
@@ -222,7 +216,6 @@ function generateChunk(x) {
       h: 20,
 
       moving:
-        difficulty >= 3 &&
         Math.random() <
         Math.min(
           0.10 + difficulty * 0.02,
@@ -232,7 +225,43 @@ function generateChunk(x) {
       dir: 1,
 
       startX: x + 20
-    });
+    };
+
+    platforms.push(gapPlatform);
+
+
+    /* ENEMY ON GAP PLATFORM */
+
+    if (Math.random() < 0.30) {
+
+      enemies.push({
+
+        x:
+          gapPlatform.x +
+          gapPlatform.w / 2 - 20,
+
+        y:
+          gapPlatform.y - 40,
+
+        w: 40,
+        h: 40,
+
+        dir:
+          Math.random() < 0.5
+          ? 1
+          : -1,
+
+        speed:
+          1.0 +
+          difficulty * 0.08,
+
+        onPlatform: true,
+
+        platform:
+          gapPlatform
+      });
+
+    }
 
   }
 
@@ -241,19 +270,22 @@ function generateChunk(x) {
      EXTRA PLATFORM
   ===================== */
 
-  if (Math.random() < 0.35) {
+  if (Math.random() < 0.60) {
 
     const px = x + 30;
 
-    platforms.push({
+    const extraPlatform = {
 
       x: px,
 
       y:
         canvas.height -
-        (Math.random() * 200 + 140),
+        (Math.random() * 220 + 140),
 
-      w: 140,
+      w:
+        140 +
+        Math.random() * 60,
+
       h: 20,
 
       moving:
@@ -266,14 +298,120 @@ function generateChunk(x) {
       dir: 1,
 
       startX: px
+    };
 
-    });
+    platforms.push(extraPlatform);
+
+
+    /* ENEMY ON PLATFORM */
+
+    if (Math.random() < 0.28) {
+
+      enemies.push({
+
+        x:
+          extraPlatform.x +
+          extraPlatform.w / 2 - 20,
+
+        y:
+          extraPlatform.y - 40,
+
+        w: 40,
+        h: 40,
+
+        dir:
+          Math.random() < 0.5
+          ? 1
+          : -1,
+
+        speed:
+          1.0 +
+          difficulty * 0.08,
+
+        onPlatform: true,
+
+        platform:
+          extraPlatform
+      });
+
+    }
 
   }
 
 
   /* =====================
-     ENEMY CHANCE
+     SECOND EXTRA PLATFORM
+  ===================== */
+
+  if (Math.random() < 0.30) {
+
+    const px2 =
+      x + 60 +
+      Math.random() * 60;
+
+    const secondPlatform = {
+
+      x: px2,
+
+      y:
+        canvas.height -
+        (Math.random() * 260 + 190),
+
+      w:
+        110 +
+        Math.random() * 70,
+
+      h: 20,
+
+      moving:
+        Math.random() < 0.20,
+
+      dir: 1,
+
+      startX: px2
+    };
+
+    platforms.push(secondPlatform);
+
+
+    /* ENEMY ON SECOND PLATFORM */
+
+    if (Math.random() < 0.20) {
+
+      enemies.push({
+
+        x:
+          secondPlatform.x +
+          secondPlatform.w / 2 - 20,
+
+        y:
+          secondPlatform.y - 40,
+
+        w: 40,
+        h: 40,
+
+        dir:
+          Math.random() < 0.5
+          ? 1
+          : -1,
+
+        speed:
+          1.0 +
+          difficulty * 0.08,
+
+        onPlatform: true,
+
+        platform:
+          secondPlatform
+      });
+
+    }
+
+  }
+
+
+  /* =====================
+     GROUND ENEMY
   ===================== */
 
   let enemyChance =
@@ -304,15 +442,16 @@ function generateChunk(x) {
 
       speed:
         1.2 +
-        difficulty * 0.12
+        difficulty * 0.12,
 
+      onPlatform: false
     });
 
   }
 
 
   /* =====================
-     EXTRA ENEMY
+     EXTRA GROUND ENEMY
   ===================== */
 
   if (
@@ -338,8 +477,9 @@ function generateChunk(x) {
 
       speed:
         1.5 +
-        difficulty * 0.12
+        difficulty * 0.12,
 
+      onPlatform: false
     });
 
   }
@@ -363,7 +503,6 @@ function generateChunk(x) {
       h: 20,
 
       collected: false
-
     });
 
   }
@@ -380,7 +519,6 @@ for (let i = 0; i < 20; i++) {
   generateChunk(nextChunkX);
 
   nextChunkX += chunkWidth;
-
 }
 
 
@@ -502,33 +640,15 @@ function increaseDifficulty() {
 
   difficulty++;
 
-
-  /*
-    Faster every level.
-  */
-
   scrollSpeed += 0.35;
 
-
-  /*
-    Damage increases by 0.5
-    every level.
-
-    Maximum = 20 health.
-  */
-
   enemyDamage = Math.min(
-
     1 +
     (difficulty - 8) * 0.5,
-
     20
-
   );
 
-
   nextDifficultyScore += 1000;
-
 }
 
 
@@ -542,38 +662,19 @@ function damagePlayer() {
     return;
   }
 
-
   player.health -= enemyDamage;
-
-
-  /*
-    One quick flash.
-  */
 
   hitFlash = true;
 
-
   setTimeout(function() {
-
     hitFlash = false;
-
   }, 120);
-
-
-  /*
-    Prevent repeated damage while
-    still touching the enemy.
-  */
 
   invincible = true;
 
-
   setTimeout(function() {
-
     invincible = false;
-
   }, invincibleTime);
-
 }
 
 
@@ -588,17 +689,13 @@ function update() {
   }
 
 
-  /* =====================
-     SCORE
-  ===================== */
+  /* SCORE */
 
   score += 1;
 
 
   if (score >= nextDifficultyScore) {
-
     increaseDifficulty();
-
   }
 
 
@@ -614,7 +711,6 @@ function update() {
     generateChunk(nextChunkX);
 
     nextChunkX += chunkWidth;
-
   }
 
 
@@ -695,20 +791,15 @@ function update() {
       -player.jumpPower;
 
     player.grounded = false;
-
   }
 
 
-  /* =====================
-     GRAVITY
-  ===================== */
+  /* GRAVITY */
 
   player.vy += gravity;
 
 
-  /* =====================
-     MOVE PLAYER
-  ===================== */
+  /* MOVE */
 
   player.x += player.vx;
 
@@ -725,21 +816,11 @@ function update() {
   for (let f of floorSegments) {
 
     if (
-
-      player.x + player.w >
-      f.x &&
-
-      player.x <
-      f.x + f.w &&
-
-      player.y + player.h >=
-      f.y &&
-
-      player.y + player.h <=
-      f.y + 25 &&
-
+      player.x + player.w > f.x &&
+      player.x < f.x + f.w &&
+      player.y + player.h >= f.y &&
+      player.y + player.h <= f.y + 25 &&
       player.vy >= 0
-
     ) {
 
       player.y =
@@ -748,7 +829,6 @@ function update() {
       player.vy = 0;
 
       player.grounded = true;
-
     }
 
   }
@@ -777,7 +857,6 @@ function update() {
       ) {
 
         p.dir = 1;
-
       }
 
 
@@ -787,28 +866,17 @@ function update() {
       ) {
 
         p.dir = -1;
-
       }
 
     }
 
 
     if (
-
-      player.x + player.w >
-      p.x &&
-
-      player.x <
-      p.x + p.w &&
-
-      player.y + player.h >=
-      p.y &&
-
-      player.y + player.h <=
-      p.y + 25 &&
-
+      player.x + player.w > p.x &&
+      player.x < p.x + p.w &&
+      player.y + player.h >= p.y &&
+      player.y + player.h <= p.y + 25 &&
       player.vy >= 0
-
     ) {
 
       player.y =
@@ -817,7 +885,6 @@ function update() {
       player.vy = 0;
 
       player.grounded = true;
-
     }
 
   }
@@ -829,38 +896,81 @@ function update() {
 
   for (let e of enemies) {
 
-    e.x +=
-      e.dir * e.speed;
 
+    /* PLATFORM ENEMY */
 
     if (
-      Math.random() <
-      0.005
+      e.onPlatform &&
+      e.platform
     ) {
 
-      e.dir *= -1;
+      e.x +=
+        e.dir * e.speed;
+
+
+      e.y =
+        e.platform.y -
+        e.h;
+
+
+      if (
+        e.x <=
+        e.platform.x
+      ) {
+
+        e.x =
+          e.platform.x;
+
+        e.dir = 1;
+      }
+
+
+      if (
+        e.x + e.w >=
+        e.platform.x +
+        e.platform.w
+      ) {
+
+        e.x =
+          e.platform.x +
+          e.platform.w -
+          e.w;
+
+        e.dir = -1;
+      }
 
     }
 
 
+    /* GROUND ENEMY */
+
+    else {
+
+      e.x +=
+        e.dir * e.speed;
+
+
+      if (
+        Math.random() <
+        0.005
+      ) {
+
+        e.dir *= -1;
+      }
+
+    }
+
+
+    /* PLAYER COLLISION */
+
     if (
-
-      player.x <
-      e.x + e.w &&
-
-      player.x + player.w >
-      e.x &&
-
-      player.y <
-      e.y + e.h &&
-
-      player.y + player.h >
-      e.y
-
+      player.x < e.x + e.w &&
+      player.x + player.w > e.x &&
+      player.y < e.y + e.h &&
+      player.y + player.h > e.y
     ) {
 
       damagePlayer();
-
     }
 
   }
@@ -878,34 +988,15 @@ function update() {
 
 
     if (
-
-      player.x <
-      c.x + c.w &&
-
-      player.x + player.w >
-      c.x &&
-
-      player.y <
-      c.y + c.h &&
-
-      player.y + player.h >
-      c.y
-
+      player.x < c.x + c.w &&
+      player.x + player.w > c.x &&
+      player.y < c.y + c.h &&
+      player.y + player.h > c.y
     ) {
 
       c.collected = true;
 
-
-      /*
-        Heal 5 health.
-      */
-
       player.health += 5;
-
-
-      /*
-        Bonus score.
-      */
 
       score += 100;
 
@@ -915,7 +1006,6 @@ function update() {
       ) {
 
         player.health = 100;
-
       }
 
     }
@@ -933,7 +1023,6 @@ function update() {
   ) {
 
     endGame();
-
   }
 
 
@@ -948,7 +1037,6 @@ function update() {
     player.health = 0;
 
     endGame();
-
   }
 
 }
@@ -972,7 +1060,6 @@ function endGame() {
       "platformerHighScore",
       highScore
     );
-
   }
 
 
@@ -992,7 +1079,6 @@ function endGame() {
 
   gameOverScreen.style.display =
     "block";
-
 }
 
 
@@ -1010,78 +1096,52 @@ function draw() {
   );
 
 
-  /* =====================
-     FLOOR
-  ===================== */
+  /* FLOOR */
 
   ctx.fillStyle = "#444";
 
   for (let f of floorSegments) {
 
     ctx.fillRect(
-
       f.x - player.x + 200,
-
       f.y,
-
       f.w,
-
       f.h
-
     );
-
   }
 
 
-  /* =====================
-     PLATFORMS
-  ===================== */
+  /* PLATFORMS */
 
   ctx.fillStyle = "#654321";
 
   for (let p of platforms) {
 
     ctx.fillRect(
-
       p.x - player.x + 200,
-
       p.y,
-
       p.w,
-
       p.h
-
     );
-
   }
 
 
-  /* =====================
-     ENEMIES
-  ===================== */
+  /* ENEMIES */
 
   ctx.fillStyle = "purple";
 
   for (let e of enemies) {
 
     ctx.fillRect(
-
       e.x - player.x + 200,
-
       e.y,
-
       e.w,
-
       e.h
-
     );
-
   }
 
 
-  /* =====================
-     COINS
-  ===================== */
+  /* COINS */
 
   for (let c of coins) {
 
@@ -1089,39 +1149,23 @@ function draw() {
       continue;
     }
 
-
     ctx.fillStyle = "gold";
 
     ctx.beginPath();
 
     ctx.arc(
-
       c.x - player.x + 200,
-
       c.y,
-
       10,
-
       0,
-
       Math.PI * 2
-
     );
 
     ctx.fill();
-
   }
 
 
-  /* =====================
-     PLAYER
-  ===================== */
-
-  /*
-    Normal = red
-    Hit = white for 120ms
-    then straight back to red.
-  */
+  /* PLAYER */
 
   if (hitFlash) {
 
@@ -1130,25 +1174,19 @@ function draw() {
   } else {
 
     ctx.fillStyle = "red";
-
   }
 
 
   ctx.fillRect(
-
     200,
-
     player.y,
-
     player.w,
-
     player.h
-
   );
 
 
   /* =====================
-     HEALTH BAR BACKGROUND
+     HEALTH BAR
   ===================== */
 
   ctx.fillStyle = "#333";
@@ -1161,10 +1199,6 @@ function draw() {
   );
 
 
-  /* =====================
-     HEALTH COLOUR
-  ===================== */
-
   if (player.health >= 50) {
 
     ctx.fillStyle = "green";
@@ -1176,33 +1210,21 @@ function draw() {
   } else {
 
     ctx.fillStyle = "red";
-
   }
 
 
-  /* =====================
-     HEALTH BAR
-  ===================== */
-
   ctx.fillRect(
-
     22,
-
     22,
-
     Math.max(
       0,
       player.health * 2
     ),
-
     20
-
   );
 
 
-  /* =====================
-     HEALTH TEXT
-  ===================== */
+  /* HEALTH TEXT */
 
   ctx.fillStyle = "white";
 
@@ -1210,15 +1232,11 @@ function draw() {
     "bold 18px Arial";
 
   ctx.fillText(
-
     "Health: " +
     Math.round(player.health) +
     "%",
-
     20,
-
     67
-
   );
 
 
@@ -1235,30 +1253,22 @@ function draw() {
   /* HIGH SCORE */
 
   ctx.fillText(
-
     "HI " +
     String(highScore)
       .padStart(6, "0"),
-
     canvas.width - 190,
-
     35
-
   );
 
 
   /* CURRENT SCORE */
 
   ctx.fillText(
-
     String(
       Math.floor(score)
     ).padStart(6, "0"),
-
     canvas.width - 20,
-
     35
-
   );
 
 
@@ -1268,19 +1278,14 @@ function draw() {
     "16px Arial";
 
   ctx.fillText(
-
     "Level " +
     difficulty,
-
     canvas.width - 20,
-
     62
-
   );
 
 
   ctx.textAlign = "left";
-
 }
 
 
@@ -1295,7 +1300,6 @@ function loop() {
   draw();
 
   requestAnimationFrame(loop);
-
 }
 
 
