@@ -91,10 +91,6 @@ let gameOver = false;
 
 let score = 0;
 
-/*
-  High score is remembered by the browser,
-  even if you refresh the page.
-*/
 let highScore =
   Number(localStorage.getItem("platformerHighScore")) || 0;
 
@@ -103,19 +99,28 @@ let highScore =
    DIFFICULTY
 ========================= */
 
-let difficulty = 1;
+let difficulty = 8;
 
-/*
-  Every 1000 score:
-  difficulty increases.
-*/
 let nextDifficultyScore = 1000;
 
 /*
-  Enemies initially remove this
-  much health per frame of contact.
+  Damage per enemy touch.
 */
-let enemyDamage = 0.25;
+let enemyDamage = 1;
+
+
+/* =========================
+   HIT / INVINCIBILITY
+========================= */
+
+let invincible = false;
+
+const invincibleTime = 600;
+
+/*
+  Used for one quick flash.
+*/
+let hitFlash = false;
 
 
 /* =========================
@@ -152,14 +157,9 @@ const gravity = 0.8;
    GAME SPEED
 ========================= */
 
-let scrollSpeed = 3;
+let scrollSpeed = 5;
 
-/*
-  Very small continuous increase,
-  so it gets harder even between
-  difficulty levels.
-*/
-let speedIncrease = 0.00015;
+let speedIncrease = 0.0003;
 
 
 /* =========================
@@ -185,13 +185,6 @@ const deleteDistance = 1200;
 
 function generateChunk(x) {
 
-  /*
-    Higher difficulty =
-    slightly more gaps.
-
-    Maximum gap chance = 28%.
-  */
-
   let gapChance =
     Math.min(
       0.15 + difficulty * 0.008,
@@ -200,10 +193,6 @@ function generateChunk(x) {
 
   let gap = false;
 
-
-  /*
-    Keep the beginning easy.
-  */
 
   if (x > 800) {
     gap = Math.random() < gapChance;
@@ -225,11 +214,6 @@ function generateChunk(x) {
 
   } else {
 
-    /*
-      Every gap gets a platform,
-      so the game is still possible.
-    */
-
     platforms.push({
       x: x + 20,
       y: canvas.height - 150,
@@ -240,7 +224,10 @@ function generateChunk(x) {
       moving:
         difficulty >= 3 &&
         Math.random() <
-        Math.min(0.10 + difficulty * 0.02, 0.4),
+        Math.min(
+          0.10 + difficulty * 0.02,
+          0.4
+        ),
 
       dir: 1,
 
@@ -270,9 +257,11 @@ function generateChunk(x) {
       h: 20,
 
       moving:
-        difficulty >= 2 &&
         Math.random() <
-        Math.min(0.10 + difficulty * 0.015, 0.35),
+        Math.min(
+          0.10 + difficulty * 0.015,
+          0.35
+        ),
 
       dir: 1,
 
@@ -284,17 +273,8 @@ function generateChunk(x) {
 
 
   /* =====================
-     ENEMY SPAWN CHANCE
+     ENEMY CHANCE
   ===================== */
-
-  /*
-    Difficulty 1:
-    about 25%
-
-    Difficulty increases enemy chance.
-
-    Maximum = 70%
-  */
 
   let enemyChance =
     Math.min(
@@ -303,12 +283,10 @@ function generateChunk(x) {
     );
 
 
-  /*
-    Only spawn ground enemies
-    where there is floor.
-  */
-
-  if (!gap && Math.random() < enemyChance) {
+  if (
+    !gap &&
+    Math.random() < enemyChance
+  ) {
 
     enemies.push({
 
@@ -324,11 +302,6 @@ function generateChunk(x) {
         ? 1
         : -1,
 
-      /*
-        Enemies also gradually
-        become faster.
-      */
-
       speed:
         1.2 +
         difficulty * 0.12
@@ -341,11 +314,6 @@ function generateChunk(x) {
   /* =====================
      EXTRA ENEMY
   ===================== */
-
-  /*
-    From difficulty 5 onwards,
-    some chunks can have TWO enemies.
-  */
 
   if (
     difficulty >= 5 &&
@@ -482,7 +450,6 @@ function startCountdown() {
   let count = 3;
 
   countdown.style.display = "block";
-
   countdown.innerText = count;
 
 
@@ -535,26 +502,77 @@ function increaseDifficulty() {
 
   difficulty++;
 
-  /*
-    Make the whole world move faster.
-  */
-
-  scrollSpeed += 0.25;
-
 
   /*
-    Enemies remove more health.
+    Faster every level.
   */
 
-  enemyDamage += 0.06;
+  scrollSpeed += 0.35;
 
 
   /*
-    Increase the score needed
-    for the next difficulty level.
+    Damage increases by 0.5
+    every level.
+
+    Maximum = 20 health.
   */
+
+  enemyDamage = Math.min(
+
+    1 +
+    (difficulty - 8) * 0.5,
+
+    20
+
+  );
+
 
   nextDifficultyScore += 1000;
+
+}
+
+
+/* =========================
+   PLAYER HIT
+========================= */
+
+function damagePlayer() {
+
+  if (invincible) {
+    return;
+  }
+
+
+  player.health -= enemyDamage;
+
+
+  /*
+    One quick flash.
+  */
+
+  hitFlash = true;
+
+
+  setTimeout(function() {
+
+    hitFlash = false;
+
+  }, 120);
+
+
+  /*
+    Prevent repeated damage while
+    still touching the enemy.
+  */
+
+  invincible = true;
+
+
+  setTimeout(function() {
+
+    invincible = false;
+
+  }, invincibleTime);
 
 }
 
@@ -574,17 +592,8 @@ function update() {
      SCORE
   ===================== */
 
-  /*
-    Similar idea to Chrome Dino:
-    score constantly counts upward.
-  */
-
   score += 1;
 
-
-  /*
-    Difficulty increase.
-  */
 
   if (score >= nextDifficultyScore) {
 
@@ -753,17 +762,13 @@ function update() {
 
     if (p.moving) {
 
-      /*
-        Moving platforms also
-        get faster at higher levels.
-      */
-
       const platformSpeed =
         1.5 +
         difficulty * 0.08;
 
       p.x +=
-        p.dir * platformSpeed;
+        p.dir *
+        platformSpeed;
 
 
       if (
@@ -854,13 +859,7 @@ function update() {
 
     ) {
 
-      /*
-        Enemy damage increases
-        with difficulty.
-      */
-
-      player.health -=
-        enemyDamage;
+      damagePlayer();
 
     }
 
@@ -898,15 +897,14 @@ function update() {
 
 
       /*
-        Heal 5%.
+        Heal 5 health.
       */
 
       player.health += 5;
 
 
       /*
-        Bonus score for getting
-        a coin.
+        Bonus score.
       */
 
       score += 100;
@@ -964,10 +962,6 @@ function endGame() {
 
   gameOver = true;
 
-
-  /*
-    Save high score.
-  */
 
   if (score > highScore) {
 
@@ -1123,7 +1117,22 @@ function draw() {
      PLAYER
   ===================== */
 
-  ctx.fillStyle = "red";
+  /*
+    Normal = red
+    Hit = white for 120ms
+    then straight back to red.
+  */
+
+  if (hitFlash) {
+
+    ctx.fillStyle = "white";
+
+  } else {
+
+    ctx.fillStyle = "red";
+
+  }
+
 
   ctx.fillRect(
 
@@ -1171,7 +1180,9 @@ function draw() {
   }
 
 
-  /* HEALTH BAR */
+  /* =====================
+     HEALTH BAR
+  ===================== */
 
   ctx.fillRect(
 
@@ -1221,9 +1232,7 @@ function draw() {
     "bold 22px monospace";
 
 
-  /*
-    HIGH SCORE
-  */
+  /* HIGH SCORE */
 
   ctx.fillText(
 
@@ -1238,9 +1247,7 @@ function draw() {
   );
 
 
-  /*
-    CURRENT SCORE
-  */
+  /* CURRENT SCORE */
 
   ctx.fillText(
 
@@ -1255,9 +1262,7 @@ function draw() {
   );
 
 
-  /*
-    Difficulty underneath score.
-  */
+  /* LEVEL */
 
   ctx.font =
     "16px Arial";
@@ -1292,6 +1297,7 @@ function loop() {
   requestAnimationFrame(loop);
 
 }
+
 
 loop();
 
