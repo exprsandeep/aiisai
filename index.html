@@ -66,8 +66,7 @@
        PUT THE CSS FOR YOUR DINO GAME HERE
        ========================================================= */
 
-
-
+    
 
 
     /* =========================================================
@@ -139,12 +138,194 @@
 
 
 
-  <h1 style="
-    text-align:center;
-    margin-top:100px;
-  ">
-    Dino Game Coming Here!
-  </h1>
+  <!DOCTYPE html>
+<html>
+<head>
+  <title>Dino Game</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: skyblue;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    #gameCanvas {
+      background: white;
+      border-top: 4px solid black;
+      display: none;
+    }
+
+    .controls {
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 15px 30px;
+      font-size: 22px;
+      margin: 10px;
+      cursor: pointer;
+    }
+
+    #restartBtn {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Dino Jump Game</h1>
+
+  <button id="playBtn">Play</button>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- ⭐ BUTTONS BELOW THE CANVAS ⭐ -->
+  <div class="controls">
+    <button id="pauseBtn">Pause</button>
+    <button id="resumeBtn">Resume</button>
+    <button id="jumpBtn">Jump</button>
+    <button id="restartBtn">Restart</button>
+  </div>
+
+  <script>
+    const playBtn = document.getElementById("playBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const jumpBtn = document.getElementById("jumpBtn");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = 300;
+
+    let dino, obstacles, speed, score, gameOver;
+    let paused = false;
+    let animationFrame;
+
+    const dinoImg = new Image();
+    dinoImg.src = "https://i.imgur.com/4LGAZ8t.png";
+
+    function init() {
+      dino = { x: 50, y: 250, width: 60, height: 60, dy: 0, jumping: false };
+      obstacles = [];
+      speed = 5;
+      score = 0;
+      gameOver = false;
+      paused = false;
+    }
+
+    function jump() {
+      if (!dino.jumping && !gameOver) {
+        dino.jumping = true;
+        dino.dy = -15;
+      }
+    }
+
+    function update() {
+      if (paused || gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+
+      ctx.fillStyle = "brown";
+      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 20, 30);
+
+      if (dino.jumping) {
+        dino.y += dino.dy;
+        dino.dy += 1;
+
+        if (dino.y >= 250) {
+          dino.y = 250;
+          dino.jumping = false;
+          dino.dy = 0;
+        }
+      }
+
+      obstacles.forEach(o => o.x -= speed);
+      obstacles = obstacles.filter(o => o.x + o.width > 0);
+
+      obstacles.forEach(o => {
+        if (
+          dino.x < o.x + o.width &&
+          dino.x + dino.width > o.x &&
+          dino.y < o.y + o.height &&
+          dino.y + dino.height > o.y
+        ) {
+          gameOver = true;
+        }
+      });
+
+      if (gameOver) {
+        ctx.fillStyle = "red";
+        ctx.font = "40px Arial";
+        ctx.fillText("GAME OVER", canvas.width / 2 - 100, 150);
+        restartBtn.style.display = "inline-block";
+        return;
+      }
+
+      score++;
+      speed = Math.min(speed + 0.002, 15);
+
+      animationFrame = requestAnimationFrame(update);
+    }
+
+    function spawnObstacle() {
+      if (gameOver) return;
+
+      const last = obstacles[obstacles.length - 1];
+      if (!last || last.x < canvas.width - 200) {
+        obstacles.push({ x: canvas.width, y: 260, width: 30, height: 40 });
+      }
+
+      setTimeout(spawnObstacle, 2000 + Math.random() * 2000);
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space") jump();
+    });
+
+    jumpBtn.addEventListener("click", jump);
+
+    pauseBtn.addEventListener("click", () => {
+      paused = true;
+      cancelAnimationFrame(animationFrame);
+    });
+
+    resumeBtn.addEventListener("click", () => {
+      if (!gameOver) {
+        paused = false;
+        update();
+      }
+    });
+
+    playBtn.addEventListener("click", () => {
+      playBtn.style.display = "none";
+      canvas.style.display = "block";
+
+      init();
+      update();
+      spawnObstacle();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      restartBtn.style.display = "none";
+      init();
+      update();
+      spawnObstacle();
+    });
+  </script>
+
+</body>
+</html>
+
 
 
 
