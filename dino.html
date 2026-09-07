@@ -1,7 +1,9 @@
+```html
 <!DOCTYPE html>
 <html>
 <head>
   <title>Dino Game</title>
+
   <style>
     body {
       margin: 0;
@@ -14,6 +16,7 @@
       background: white;
       border-top: 4px solid black;
       display: none;
+      margin: 0 auto;
     }
 
     .controls {
@@ -32,6 +35,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <h1>Dino Jump Game</h1>
@@ -40,7 +44,6 @@
 
   <canvas id="gameCanvas"></canvas>
 
-  <!-- ⭐ BUTTONS BELOW THE CANVAS ⭐ -->
   <div class="controls">
     <button id="pauseBtn">Pause</button>
     <button id="resumeBtn">Resume</button>
@@ -49,139 +52,857 @@
   </div>
 
   <script>
-    const playBtn = document.getElementById("playBtn");
-    const restartBtn = document.getElementById("restartBtn");
-    const pauseBtn = document.getElementById("pauseBtn");
-    const resumeBtn = document.getElementById("resumeBtn");
-    const jumpBtn = document.getElementById("jumpBtn");
 
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    const playBtn =
+      document.getElementById("playBtn");
 
-    canvas.width = window.innerWidth;
-    canvas.height = 300;
+    const restartBtn =
+      document.getElementById("restartBtn");
 
-    let dino, obstacles, speed, score, gameOver;
-    let paused = false;
-    let animationFrame;
+    const pauseBtn =
+      document.getElementById("pauseBtn");
+
+    const resumeBtn =
+      document.getElementById("resumeBtn");
+
+    const jumpBtn =
+      document.getElementById("jumpBtn");
+
+    const canvas =
+      document.getElementById("gameCanvas");
+
+    const ctx =
+      canvas.getContext("2d");
+
+
+    /* =========================
+       CANVAS
+    ========================= */
+
+    function resizeCanvas() {
+
+      canvas.width =
+        window.innerWidth;
+
+      canvas.height = 320;
+
+    }
+
+    resizeCanvas();
+
+    window.addEventListener(
+      "resize",
+      resizeCanvas
+    );
+
+
+    /* =========================
+       DINO IMAGE
+    ========================= */
 
     const dinoImg = new Image();
-    dinoImg.src = "https://i.imgur.com/4LGAZ8t.png";
+
+    /*
+      Put dino.png in the same
+      GitHub folder as this HTML file.
+    */
+
+    dinoImg.src = "dino.png";
+
+
+    /* =========================
+       GAME VARIABLES
+    ========================= */
+
+    let dino;
+
+    let obstacles = [];
+
+    let score = 0;
+
+    let gameOver = false;
+
+    let paused = false;
+
+    let animationFrame = null;
+
+
+    /* =========================
+       SPEED
+    ========================= */
+
+    let speed = 6;
+
+    /*
+      Smooth continuous speed increase.
+    */
+
+    const speedIncrease =
+      0.0015;
+
+    /*
+      Maximum speed.
+      Increase this later if you
+      want it insanely fast.
+    */
+
+    const maxSpeed = 22;
+
+
+    /* =========================
+       PHYSICS
+    ========================= */
+
+    const gravity = 0.9;
+
+    const jumpPower = 17;
+
+    const groundY = 250;
+
+
+    /* =========================
+       OBSTACLE SPAWNING
+    ========================= */
+
+    let obstacleTimer = 0;
+
+    let nextObstacleTime = 1200;
+
+
+    /* =========================
+       INIT GAME
+    ========================= */
 
     function init() {
-      dino = { x: 50, y: 250, width: 60, height: 60, dy: 0, jumping: false };
+
+      dino = {
+
+        x: 60,
+
+        y: groundY,
+
+        width: 60,
+
+        height: 60,
+
+        dy: 0,
+
+        jumping: false
+
+      };
+
+
       obstacles = [];
-      speed = 5;
+
       score = 0;
+
+      speed = 6;
+
       gameOver = false;
+
       paused = false;
+
+      obstacleTimer = 0;
+
+      nextObstacleTime =
+        1200 +
+        Math.random() * 800;
+
     }
+
+
+    /* =========================
+       JUMP
+    ========================= */
 
     function jump() {
-      if (!dino.jumping && !gameOver) {
+
+      if (
+        !dino.jumping &&
+        !gameOver &&
+        !paused
+      ) {
+
         dino.jumping = true;
-        dino.dy = -15;
+
+        dino.dy =
+          -jumpPower;
+
       }
+
     }
 
-    function update() {
-      if (paused || gameOver) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    /* =========================
+       SPAWN OBSTACLE
+    ========================= */
 
-      ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+    function createObstacle() {
 
-      ctx.fillStyle = "brown";
-      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+      /*
+        Slightly varied obstacle sizes.
+      */
 
-      ctx.fillStyle = "black";
-      ctx.font = "20px Arial";
-      ctx.fillText("Score: " + score, 20, 30);
+      const height =
+        35 +
+        Math.random() * 25;
 
-      if (dino.jumping) {
-        dino.y += dino.dy;
-        dino.dy += 1;
+      const width =
+        25 +
+        Math.random() * 20;
 
-        if (dino.y >= 250) {
-          dino.y = 250;
-          dino.jumping = false;
-          dino.dy = 0;
-        }
-      }
 
-      obstacles.forEach(o => o.x -= speed);
-      obstacles = obstacles.filter(o => o.x + o.width > 0);
+      obstacles.push({
 
-      obstacles.forEach(o => {
-        if (
-          dino.x < o.x + o.width &&
-          dino.x + dino.width > o.x &&
-          dino.y < o.y + o.height &&
-          dino.y + dino.height > o.y
-        ) {
-          gameOver = true;
-        }
+        x:
+          canvas.width +
+          20,
+
+        y:
+          groundY +
+          60 -
+          height,
+
+        width:
+          width,
+
+        height:
+          height
+
       });
 
-      if (gameOver) {
-        ctx.fillStyle = "red";
-        ctx.font = "40px Arial";
-        ctx.fillText("GAME OVER", canvas.width / 2 - 100, 150);
-        restartBtn.style.display = "inline-block";
+    }
+
+
+    /* =========================
+       UPDATE PHYSICS
+    ========================= */
+
+    function updateGame(deltaTime) {
+
+      if (
+        paused ||
+        gameOver
+      ) {
+
         return;
+
       }
+
+
+      /* =====================
+         SCORE
+      ===================== */
 
       score++;
-      speed = Math.min(speed + 0.002, 15);
 
-      animationFrame = requestAnimationFrame(update);
-    }
 
-    function spawnObstacle() {
-      if (gameOver) return;
+      /* =====================
+         SPEED UP
+      ===================== */
 
-      const last = obstacles[obstacles.length - 1];
-      if (!last || last.x < canvas.width - 200) {
-        obstacles.push({ x: canvas.width, y: 260, width: 30, height: 40 });
+      speed =
+        Math.min(
+          speed +
+          speedIncrease *
+          deltaTime,
+          maxSpeed
+        );
+
+
+      /* =====================
+         DINO JUMP
+      ===================== */
+
+      if (dino.jumping) {
+
+        dino.y +=
+          dino.dy;
+
+        dino.dy +=
+          gravity;
+
+
+        if (
+          dino.y >=
+          groundY
+        ) {
+
+          dino.y =
+            groundY;
+
+          dino.dy = 0;
+
+          dino.jumping =
+            false;
+
+        }
+
       }
 
-      setTimeout(spawnObstacle, 2000 + Math.random() * 2000);
+
+      /* =====================
+         OBSTACLE TIMER
+      ===================== */
+
+      obstacleTimer +=
+        deltaTime;
+
+
+      if (
+        obstacleTimer >=
+        nextObstacleTime
+      ) {
+
+        createObstacle();
+
+        obstacleTimer = 0;
+
+
+        /*
+          As speed increases,
+          obstacles can appear a little
+          closer together.
+        */
+
+        const speedFactor =
+          Math.max(
+            0,
+            speed - 6
+          );
+
+
+        nextObstacleTime =
+
+          Math.max(
+            650,
+
+            1500 -
+            speedFactor * 35 +
+            Math.random() * 700
+
+          );
+
+      }
+
+
+      /* =====================
+         MOVE OBSTACLES
+      ===================== */
+
+      for (
+        let obstacle
+        of obstacles
+      ) {
+
+        obstacle.x -=
+          speed;
+
+      }
+
+
+      obstacles =
+        obstacles.filter(
+          obstacle =>
+          obstacle.x +
+          obstacle.width >
+          -50
+        );
+
+
+      /* =====================
+         COLLISION
+      ===================== */
+
+      for (
+        let obstacle
+        of obstacles
+      ) {
+
+        /*
+          Slightly smaller hitbox
+          than the actual image.
+
+          Makes jumping feel much
+          fairer and more like
+          Chrome Dino.
+        */
+
+        const dinoLeft =
+          dino.x + 8;
+
+        const dinoRight =
+          dino.x +
+          dino.width -
+          8;
+
+        const dinoTop =
+          dino.y + 8;
+
+        const dinoBottom =
+          dino.y +
+          dino.height -
+          4;
+
+
+        if (
+
+          dinoLeft <
+          obstacle.x +
+          obstacle.width &&
+
+          dinoRight >
+          obstacle.x &&
+
+          dinoTop <
+          obstacle.y +
+          obstacle.height &&
+
+          dinoBottom >
+          obstacle.y
+
+        ) {
+
+          endGame();
+
+          break;
+
+        }
+
+      }
+
     }
 
-    document.addEventListener("keydown", e => {
-      if (e.code === "Space") jump();
-    });
 
-    jumpBtn.addEventListener("click", jump);
+    /* =========================
+       DRAW
+    ========================= */
 
-    pauseBtn.addEventListener("click", () => {
-      paused = true;
-      cancelAnimationFrame(animationFrame);
-    });
+    function drawGame() {
 
-    resumeBtn.addEventListener("click", () => {
+      ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      /* =====================
+         GROUND LINE
+      ===================== */
+
+      ctx.strokeStyle =
+        "black";
+
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        0,
+        groundY + 60
+      );
+
+      ctx.lineTo(
+        canvas.width,
+        groundY + 60
+      );
+
+      ctx.stroke();
+
+
+      /* =====================
+         DINO IMAGE
+      ===================== */
+
+      if (
+        dinoImg.complete
+      ) {
+
+        ctx.drawImage(
+
+          dinoImg,
+
+          dino.x,
+
+          dino.y,
+
+          dino.width,
+
+          dino.height
+
+        );
+
+      }
+
+
+      /* =====================
+         OBSTACLES
+      ===================== */
+
+      ctx.fillStyle =
+        "green";
+
+
+      for (
+        let obstacle
+        of obstacles
+      ) {
+
+        ctx.fillRect(
+
+          obstacle.x,
+
+          obstacle.y,
+
+          obstacle.width,
+
+          obstacle.height
+
+        );
+
+      }
+
+
+      /* =====================
+         SCORE
+      ===================== */
+
+      ctx.fillStyle =
+        "black";
+
+      ctx.font =
+        "bold 20px monospace";
+
+      ctx.textAlign =
+        "right";
+
+
+      ctx.fillText(
+
+        String(score)
+          .padStart(6, "0"),
+
+        canvas.width - 20,
+
+        30
+
+      );
+
+
+      ctx.textAlign =
+        "left";
+
+
+      /* =====================
+         SPEED DISPLAY
+      ===================== */
+
+      ctx.font =
+        "14px Arial";
+
+      ctx.fillText(
+
+        "Speed: " +
+        speed.toFixed(1),
+
+        20,
+
+        30
+
+      );
+
+
+      /* =====================
+         GAME OVER
+      ===================== */
+
+      if (gameOver) {
+
+        ctx.fillStyle =
+          "red";
+
+        ctx.font =
+          "bold 40px Arial";
+
+        ctx.textAlign =
+          "center";
+
+
+        ctx.fillText(
+
+          "GAME OVER",
+
+          canvas.width / 2,
+
+          140
+
+        );
+
+
+        ctx.font =
+          "20px Arial";
+
+        ctx.fillText(
+
+          "Score: " +
+          score,
+
+          canvas.width / 2,
+
+          180
+
+        );
+
+
+        ctx.textAlign =
+          "left";
+
+      }
+
+    }
+
+
+    /* =========================
+       GAME LOOP
+    ========================= */
+
+    let lastTime = 0;
+
+
+    function gameLoop(time) {
+
+      if (paused) {
+
+        lastTime = time;
+
+        return;
+
+      }
+
+
+      if (!lastTime) {
+
+        lastTime = time;
+
+      }
+
+
+      let deltaTime =
+        time - lastTime;
+
+
+      /*
+        Prevent huge jumps if browser
+        tab was inactive.
+      */
+
+      deltaTime =
+        Math.min(
+          deltaTime,
+          32
+        );
+
+
+      lastTime = time;
+
+
+      updateGame(
+        deltaTime
+      );
+
+
+      drawGame();
+
+
       if (!gameOver) {
-        paused = false;
-        update();
+
+        animationFrame =
+          requestAnimationFrame(
+            gameLoop
+          );
+
       }
-    });
 
-    playBtn.addEventListener("click", () => {
-      playBtn.style.display = "none";
-      canvas.style.display = "block";
+    }
 
-      init();
-      update();
-      spawnObstacle();
-    });
 
-    restartBtn.addEventListener("click", () => {
-      restartBtn.style.display = "none";
-      init();
-      update();
-      spawnObstacle();
-    });
+    /* =========================
+       END GAME
+    ========================= */
+
+    function endGame() {
+
+      gameOver = true;
+
+      restartBtn.style.display =
+        "inline-block";
+
+    }
+
+
+    /* =========================
+       KEYBOARD
+    ========================= */
+
+    document.addEventListener(
+      "keydown",
+      function(e) {
+
+        if (
+          e.code === "Space"
+        ) {
+
+          e.preventDefault();
+
+          jump();
+
+        }
+
+      }
+    );
+
+
+    /* =========================
+       JUMP BUTTON
+    ========================= */
+
+    jumpBtn.addEventListener(
+      "click",
+      jump
+    );
+
+
+    /* =========================
+       PAUSE
+    ========================= */
+
+    pauseBtn.addEventListener(
+      "click",
+      function() {
+
+        if (
+          gameOver ||
+          paused
+        ) {
+
+          return;
+
+        }
+
+
+        paused = true;
+
+        cancelAnimationFrame(
+          animationFrame
+        );
+
+      }
+    );
+
+
+    /* =========================
+       RESUME
+    ========================= */
+
+    resumeBtn.addEventListener(
+      "click",
+      function() {
+
+        if (
+          gameOver ||
+          !paused
+        ) {
+
+          return;
+
+        }
+
+
+        paused = false;
+
+        lastTime =
+          performance.now();
+
+
+        animationFrame =
+          requestAnimationFrame(
+            gameLoop
+          );
+
+      }
+    );
+
+
+    /* =========================
+       PLAY
+    ========================= */
+
+    playBtn.addEventListener(
+      "click",
+      function() {
+
+        playBtn.style.display =
+          "none";
+
+        canvas.style.display =
+          "block";
+
+        restartBtn.style.display =
+          "none";
+
+
+        init();
+
+
+        lastTime =
+          performance.now();
+
+
+        animationFrame =
+          requestAnimationFrame(
+            gameLoop
+          );
+
+      }
+    );
+
+
+    /* =========================
+       RESTART
+    ========================= */
+
+    restartBtn.addEventListener(
+      "click",
+      function() {
+
+        restartBtn.style.display =
+          "none";
+
+
+        cancelAnimationFrame(
+          animationFrame
+        );
+
+
+        init();
+
+
+        lastTime =
+          performance.now();
+
+
+        animationFrame =
+          requestAnimationFrame(
+            gameLoop
+          );
+
+      }
+    );
+
   </script>
 
 </body>
 </html>
+```
