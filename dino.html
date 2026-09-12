@@ -53,47 +53,17 @@
 
   <script>
 
-    const playBtn =
-      document.getElementById("playBtn");
+    const playBtn = document.getElementById("playBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const jumpBtn = document.getElementById("jumpBtn");
 
-    const restartBtn =
-      document.getElementById("restartBtn");
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    const pauseBtn =
-      document.getElementById("pauseBtn");
-
-    const resumeBtn =
-      document.getElementById("resumeBtn");
-
-    const jumpBtn =
-      document.getElementById("jumpBtn");
-
-    const canvas =
-      document.getElementById("gameCanvas");
-
-    const ctx =
-      canvas.getContext("2d");
-
-
-    /* =========================
-       CANVAS
-    ========================= */
-
-    function resizeCanvas() {
-
-      canvas.width =
-        window.innerWidth;
-
-      canvas.height = 320;
-
-    }
-
-    resizeCanvas();
-
-    window.addEventListener(
-      "resize",
-      resizeCanvas
-    );
+    canvas.width = window.innerWidth;
+    canvas.height = 300;
 
 
     /* =========================
@@ -104,7 +74,7 @@
 
     /*
       Put dino.png in the same
-      GitHub folder as this HTML file.
+      folder as this HTML file.
     */
 
     dinoImg.src = "dino.png";
@@ -115,88 +85,69 @@
     ========================= */
 
     let dino;
-
-    let obstacles = [];
-
-    let score = 0;
-
-    let gameOver = false;
+    let obstacles;
+    let speed;
+    let score;
+    let gameOver;
 
     let paused = false;
-
-    let animationFrame = null;
-
-
-    /* =========================
-       SPEED
-    ========================= */
-
-    let speed = 6;
-
-    /*
-      Smooth continuous speed increase.
-    */
-
-    const speedIncrease =
-      0.0015;
-
-    /*
-      Maximum speed.
-      Increase this later if you
-      want it insanely fast.
-    */
-
-    const maxSpeed = 22;
-
-
-    /* =========================
-       PHYSICS
-    ========================= */
-
-    const gravity = 0.9;
-
-    const jumpPower = 17;
-
-    const groundY = 250;
-
-
-    /* =========================
-       OBSTACLE SPAWNING
-    ========================= */
+    let animationFrame;
 
     let obstacleTimer = 0;
-
-    let nextObstacleTime = 1200;
+    let nextObstacleTime = 1400;
 
 
     /* =========================
-       INIT GAME
+       HIGH SCORE
+    ========================= */
+
+    let highScore =
+      Number(
+        localStorage.getItem("dinoHighScore")
+      ) || 0;
+
+
+    /* =========================
+       SETTINGS
+    ========================= */
+
+    const gravity = 1;
+
+    const jumpPower = 16;
+
+    const groundY = 230;
+
+    /*
+      Starting speed.
+    */
+    const startingSpeed = 5;
+
+    /*
+      It slowly gets faster forever.
+    */
+    const speedIncrease = 0.0015;
+
+
+    /* =========================
+       START / RESET
     ========================= */
 
     function init() {
 
       dino = {
-
-        x: 60,
-
+        x: 50,
         y: groundY,
-
         width: 60,
-
         height: 60,
-
         dy: 0,
-
         jumping: false
-
       };
-
 
       obstacles = [];
 
-      score = 0;
+      speed = startingSpeed;
 
-      speed = 6;
+      score = 0;
 
       gameOver = false;
 
@@ -206,8 +157,7 @@
 
       nextObstacleTime =
         1200 +
-        Math.random() * 800;
-
+        Math.random() * 900;
     }
 
 
@@ -225,27 +175,21 @@
 
         dino.jumping = true;
 
-        dino.dy =
-          -jumpPower;
-
+        dino.dy = -jumpPower;
       }
 
     }
 
 
     /* =========================
-       SPAWN OBSTACLE
+       CREATE OBSTACLE
     ========================= */
 
     function createObstacle() {
 
-      /*
-        Slightly varied obstacle sizes.
-      */
-
       const height =
         35 +
-        Math.random() * 25;
+        Math.random() * 20;
 
       const width =
         25 +
@@ -254,20 +198,16 @@
 
       obstacles.push({
 
-        x:
-          canvas.width +
-          20,
+        x: canvas.width,
 
         y:
           groundY +
-          60 -
+          dino.height -
           height,
 
-        width:
-          width,
+        width: width,
 
-        height:
-          height
+        height: height
 
       });
 
@@ -275,18 +215,16 @@
 
 
     /* =========================
-       UPDATE PHYSICS
+       UPDATE
     ========================= */
 
-    function updateGame(deltaTime) {
+    function update() {
 
       if (
         paused ||
         gameOver
       ) {
-
         return;
-
       }
 
 
@@ -294,48 +232,46 @@
          SCORE
       ===================== */
 
+      /*
+        Chrome-style:
+        score keeps ticking upward.
+      */
+
       score++;
 
 
       /* =====================
-         SPEED UP
+         SPEED
       ===================== */
 
-      speed =
-        Math.min(
-          speed +
-          speedIncrease *
-          deltaTime,
-          maxSpeed
-        );
+      /*
+        Slowly and continuously
+        get faster.
+      */
+
+      speed += speedIncrease;
 
 
       /* =====================
-         DINO JUMP
+         JUMP PHYSICS
       ===================== */
 
       if (dino.jumping) {
 
-        dino.y +=
-          dino.dy;
+        dino.y += dino.dy;
 
-        dino.dy +=
-          gravity;
+        dino.dy += gravity;
 
 
         if (
-          dino.y >=
-          groundY
+          dino.y >= groundY
         ) {
 
-          dino.y =
-            groundY;
+          dino.y = groundY;
 
           dino.dy = 0;
 
-          dino.jumping =
-            false;
-
+          dino.jumping = false;
         }
 
       }
@@ -345,13 +281,12 @@
          OBSTACLE TIMER
       ===================== */
 
-      obstacleTimer +=
-        deltaTime;
+      obstacleTimer++;
 
 
       if (
         obstacleTimer >=
-        nextObstacleTime
+        nextObstacleTime / 16
       ) {
 
         createObstacle();
@@ -360,25 +295,18 @@
 
 
         /*
-          As speed increases,
-          obstacles can appear a little
-          closer together.
+          As the game gets faster,
+          obstacle spacing slowly
+          gets a little tighter.
         */
 
-        const speedFactor =
-          Math.max(
-            0,
-            speed - 6
-          );
-
-
         nextObstacleTime =
-
           Math.max(
-            650,
+
+            700,
 
             1500 -
-            speedFactor * 35 +
+            (speed - startingSpeed) * 35 +
             Math.random() * 700
 
           );
@@ -390,23 +318,21 @@
          MOVE OBSTACLES
       ===================== */
 
-      for (
-        let obstacle
-        of obstacles
-      ) {
+      for (let o of obstacles) {
 
-        obstacle.x -=
-          speed;
+        o.x -= speed;
 
       }
 
 
       obstacles =
         obstacles.filter(
-          obstacle =>
-          obstacle.x +
-          obstacle.width >
-          -50
+
+          o =>
+          o.x +
+          o.width >
+          0
+
         );
 
 
@@ -414,18 +340,11 @@
          COLLISION
       ===================== */
 
-      for (
-        let obstacle
-        of obstacles
-      ) {
+      for (let o of obstacles) {
 
         /*
-          Slightly smaller hitbox
-          than the actual image.
-
-          Makes jumping feel much
-          fairer and more like
-          Chrome Dino.
+          Slightly smaller Dino hitbox
+          makes jumps feel fairer.
         */
 
         const dinoLeft =
@@ -433,40 +352,35 @@
 
         const dinoRight =
           dino.x +
-          dino.width -
-          8;
+          dino.width - 8;
 
         const dinoTop =
-          dino.y + 8;
+          dino.y + 7;
 
         const dinoBottom =
           dino.y +
-          dino.height -
-          4;
+          dino.height - 4;
 
 
         if (
 
           dinoLeft <
-          obstacle.x +
-          obstacle.width &&
+          o.x + o.width &&
 
           dinoRight >
-          obstacle.x &&
+          o.x &&
 
           dinoTop <
-          obstacle.y +
-          obstacle.height &&
+          o.y + o.height &&
 
           dinoBottom >
-          obstacle.y
+          o.y
 
         ) {
 
           endGame();
 
-          break;
-
+          return;
         }
 
       }
@@ -478,7 +392,7 @@
        DRAW
     ========================= */
 
-    function drawGame() {
+    function draw() {
 
       ctx.clearRect(
         0,
@@ -489,76 +403,65 @@
 
 
       /* =====================
-         GROUND LINE
+         GROUND
       ===================== */
 
-      ctx.strokeStyle =
-        "black";
+      ctx.strokeStyle = "#555";
 
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2;
 
       ctx.beginPath();
 
       ctx.moveTo(
         0,
-        groundY + 60
+        groundY + dino.height
       );
 
       ctx.lineTo(
         canvas.width,
-        groundY + 60
+        groundY + dino.height
       );
 
       ctx.stroke();
 
 
       /* =====================
-         DINO IMAGE
+         DINO
       ===================== */
 
-      if (
-        dinoImg.complete
-      ) {
+      ctx.drawImage(
 
-        ctx.drawImage(
+        dinoImg,
 
-          dinoImg,
+        dino.x,
 
-          dino.x,
+        dino.y,
 
-          dino.y,
+        dino.width,
 
-          dino.width,
+        dino.height
 
-          dino.height
-
-        );
-
-      }
+      );
 
 
       /* =====================
          OBSTACLES
       ===================== */
 
-      ctx.fillStyle =
-        "green";
+      ctx.fillStyle = "#555";
 
 
-      for (
-        let obstacle
-        of obstacles
-      ) {
+      for (let o of obstacles) {
 
         ctx.fillRect(
 
-          obstacle.x,
+          o.x,
 
-          obstacle.y,
+          o.y,
 
-          obstacle.width,
+          o.width,
 
-          obstacle.height
+          o.height
 
         );
 
@@ -566,23 +469,39 @@
 
 
       /* =====================
-         SCORE
+         CHROME STYLE SCORE
       ===================== */
 
-      ctx.fillStyle =
-        "black";
+      ctx.fillStyle = "#555";
 
       ctx.font =
         "bold 20px monospace";
 
-      ctx.textAlign =
-        "right";
+      ctx.textAlign = "right";
 
+
+      const currentScore =
+        String(score)
+          .padStart(5, "0");
+
+
+      const bestScore =
+        String(highScore)
+          .padStart(5, "0");
+
+
+      /*
+        Looks like:
+
+        HI 00452 00127
+      */
 
       ctx.fillText(
 
-        String(score)
-          .padStart(6, "0"),
+        "HI " +
+        bestScore +
+        "  " +
+        currentScore,
 
         canvas.width - 20,
 
@@ -591,27 +510,7 @@
       );
 
 
-      ctx.textAlign =
-        "left";
-
-
-      /* =====================
-         SPEED DISPLAY
-      ===================== */
-
-      ctx.font =
-        "14px Arial";
-
-      ctx.fillText(
-
-        "Speed: " +
-        speed.toFixed(1),
-
-        20,
-
-        30
-
-      );
+      ctx.textAlign = "left";
 
 
       /* =====================
@@ -620,14 +519,12 @@
 
       if (gameOver) {
 
-        ctx.fillStyle =
-          "red";
+        ctx.fillStyle = "#555";
 
         ctx.font =
-          "bold 40px Arial";
+          "bold 36px Arial";
 
-        ctx.textAlign =
-          "center";
+        ctx.textAlign = "center";
 
 
         ctx.fillText(
@@ -636,28 +533,12 @@
 
           canvas.width / 2,
 
-          140
+          130
 
         );
 
 
-        ctx.font =
-          "20px Arial";
-
-        ctx.fillText(
-
-          "Score: " +
-          score,
-
-          canvas.width / 2,
-
-          180
-
-        );
-
-
-        ctx.textAlign =
-          "left";
+        ctx.textAlign = "left";
 
       }
 
@@ -665,63 +546,20 @@
 
 
     /* =========================
-       GAME LOOP
+       MAIN GAME LOOP
     ========================= */
 
-    let lastTime = 0;
+    function loop() {
+
+      update();
+
+      draw();
 
 
-    function gameLoop(time) {
-
-      if (paused) {
-
-        lastTime = time;
-
-        return;
-
-      }
-
-
-      if (!lastTime) {
-
-        lastTime = time;
-
-      }
-
-
-      let deltaTime =
-        time - lastTime;
-
-
-      /*
-        Prevent huge jumps if browser
-        tab was inactive.
-      */
-
-      deltaTime =
-        Math.min(
-          deltaTime,
-          32
-        );
-
-
-      lastTime = time;
-
-
-      updateGame(
-        deltaTime
-      );
-
-
-      drawGame();
-
-
-      if (!gameOver) {
+      if (!gameOver && !paused) {
 
         animationFrame =
-          requestAnimationFrame(
-            gameLoop
-          );
+          requestAnimationFrame(loop);
 
       }
 
@@ -736,6 +574,22 @@
 
       gameOver = true;
 
+
+      if (
+        score >
+        highScore
+      ) {
+
+        highScore = score;
+
+        localStorage.setItem(
+          "dinoHighScore",
+          highScore
+        );
+
+      }
+
+
       restartBtn.style.display =
         "inline-block";
 
@@ -743,7 +597,7 @@
 
 
     /* =========================
-       KEYBOARD
+       SPACEBAR
     ========================= */
 
     document.addEventListener(
@@ -786,9 +640,7 @@
           gameOver ||
           paused
         ) {
-
           return;
-
         }
 
 
@@ -814,22 +666,13 @@
           gameOver ||
           !paused
         ) {
-
           return;
-
         }
 
 
         paused = false;
 
-        lastTime =
-          performance.now();
-
-
-        animationFrame =
-          requestAnimationFrame(
-            gameLoop
-          );
+        loop();
 
       }
     );
@@ -855,15 +698,7 @@
 
         init();
 
-
-        lastTime =
-          performance.now();
-
-
-        animationFrame =
-          requestAnimationFrame(
-            gameLoop
-          );
+        loop();
 
       }
     );
@@ -888,15 +723,7 @@
 
         init();
 
-
-        lastTime =
-          performance.now();
-
-
-        animationFrame =
-          requestAnimationFrame(
-            gameLoop
-          );
+        loop();
 
       }
     );
