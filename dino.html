@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Dino Game</title>
 
   <style>
@@ -32,12 +33,20 @@
     #restartBtn {
       display: none;
     }
+
+    #connectionStatus {
+      font-size: 18px;
+      font-weight: bold;
+    }
   </style>
 </head>
 
 <body>
 
   <h1>Dino Jump Game</h1>
+
+  <button id="connectEspBtn">Connect ESP8266</button>
+  <p id="connectionStatus">ESP8266 not connected</p>
 
   <button id="playBtn">Play</button>
 
@@ -51,9 +60,8 @@
   </div>
 
   <script>
-
     /* =========================
-       ELEMENTS
+       PAGE ELEMENTS
     ========================= */
 
     const playBtn =
@@ -71,6 +79,12 @@
     const jumpBtn =
       document.getElementById("jumpBtn");
 
+    const connectEspBtn =
+      document.getElementById("connectEspBtn");
+
+    const connectionStatus =
+      document.getElementById("connectionStatus");
+
     const canvas =
       document.getElementById("gameCanvas");
 
@@ -83,10 +97,7 @@
     ========================= */
 
     function resizeCanvas() {
-
-      canvas.width =
-        window.innerWidth;
-
+      canvas.width = window.innerWidth;
       canvas.height = 300;
     }
 
@@ -104,11 +115,8 @@
 
     const dinoImg = new Image();
 
-    /*
-      dino.png should be in the
-      same folder as this HTML file.
-    */
-
+    // Put dino.png in the same folder
+    // as this HTML file.
     dinoImg.src = "dino.png";
 
 
@@ -117,18 +125,25 @@
     ========================= */
 
     let dino;
-
     let obstacles = [];
 
     let speed = 8;
-
     let score = 0;
 
     let gameOver = false;
-
     let paused = false;
 
     let animationFrame = null;
+
+    const gravity = 1;
+    const jumpPower = 16;
+    const groundY = 230;
+
+    const startingSpeed = 8;
+    const speedIncrease = 0.002;
+
+    let obstacleTimer = 0;
+    let nextObstacleTime = 1200;
 
 
     /* =========================
@@ -137,90 +152,36 @@
 
     let highScore =
       Number(
-        localStorage.getItem(
-          "dinoHighScore"
-        )
+        localStorage.getItem("dinoHighScore")
       ) || 0;
 
 
     /* =========================
-       GAME SETTINGS
-    ========================= */
-
-    const gravity = 1;
-
-    const jumpPower = 16;
-
-    const groundY = 230;
-
-
-    /*
-      Faster starting speed.
-    */
-
-    const startingSpeed = 8;
-
-
-    /*
-      Slowly gets faster forever.
-    */
-
-    const speedIncrease = 0.002;
-
-
-    /* =========================
-       OBSTACLE SPAWNING
-    ========================= */
-
-    let obstacleTimer = 0;
-
-    let nextObstacleTime = 1200;
-
-
-    /* =========================
-       START / RESET GAME
+       START OR RESET GAME
     ========================= */
 
     function init() {
-
       dino = {
-
         x: 60,
-
         y: groundY,
-
         width: 60,
-
         height: 60,
-
         dy: 0,
-
         jumping: false
       };
 
-
       obstacles = [];
 
-
-      speed =
-        startingSpeed;
-
-
+      speed = startingSpeed;
       score = 0;
 
-
       gameOver = false;
-
-
       paused = false;
-
 
       obstacleTimer = 0;
 
-
       nextObstacleTime =
-        1000 +
-        Math.random() * 700;
+        1000 + Math.random() * 700;
     }
 
 
@@ -229,17 +190,14 @@
     ========================= */
 
     function jump() {
-
       if (
+        dino &&
         !dino.jumping &&
         !gameOver &&
         !paused
       ) {
-
         dino.jumping = true;
-
-        dino.dy =
-          -jumpPower;
+        dino.dy = -jumpPower;
       }
     }
 
@@ -249,34 +207,22 @@
     ========================= */
 
     function createObstacle() {
-
       const height =
-        35 +
-        Math.random() * 25;
-
+        35 + Math.random() * 25;
 
       const width =
-        25 +
-        Math.random() * 20;
-
+        25 + Math.random() * 20;
 
       obstacles.push({
-
-        x:
-          canvas.width +
-          10,
+        x: canvas.width + 10,
 
         y:
           groundY +
           dino.height -
           height,
 
-        width:
-          width,
-
-        height:
-          height
-
+        width: width,
+        height: height
       });
     }
 
@@ -286,183 +232,98 @@
     ========================= */
 
     function update() {
-
-      if (
-        paused ||
-        gameOver
-      ) {
-
+      if (paused || gameOver) {
         return;
       }
 
-
-      /* =====================
-         SCORE
-      ===================== */
-
       score++;
 
+      speed += speedIncrease;
 
-      /* =====================
-         SPEED
-      ===================== */
-
-      /*
-        Keeps increasing forever.
-      */
-
-      speed +=
-        speedIncrease;
-
-
-      /* =====================
-         JUMP PHYSICS
-      ===================== */
+      /* Jump physics */
 
       if (dino.jumping) {
+        dino.y += dino.dy;
+        dino.dy += gravity;
 
-        dino.y +=
-          dino.dy;
-
-
-        dino.dy +=
-          gravity;
-
-
-        if (
-          dino.y >=
-          groundY
-        ) {
-
-          dino.y =
-            groundY;
-
-
+        if (dino.y >= groundY) {
+          dino.y = groundY;
           dino.dy = 0;
-
-
-          dino.jumping =
-            false;
+          dino.jumping = false;
         }
       }
 
-
-      /* =====================
-         OBSTACLE TIMER
-      ===================== */
+      /* Obstacle timer */
 
       obstacleTimer++;
-
 
       if (
         obstacleTimer >=
         nextObstacleTime / 16
       ) {
-
         createObstacle();
-
 
         obstacleTimer = 0;
 
-
-        /*
-          Obstacles gradually become
-          a little closer together as
-          the speed increases.
-        */
-
         nextObstacleTime =
           Math.max(
-
             650,
 
             1350 -
             (speed - startingSpeed) * 30 +
             Math.random() * 650
-
           );
       }
 
+      /* Move obstacles */
 
-      /* =====================
-         MOVE OBSTACLES
-      ===================== */
-
-      for (
-        let obstacle
-        of obstacles
-      ) {
-
-        obstacle.x -=
-          speed;
+      for (const obstacle of obstacles) {
+        obstacle.x -= speed;
       }
-
 
       obstacles =
         obstacles.filter(
-
           obstacle =>
-          obstacle.x +
-          obstacle.width >
-          -50
-
+            obstacle.x +
+            obstacle.width >
+            -50
         );
 
+      /* Collision detection */
 
-      /* =====================
-         COLLISION
-      ===================== */
-
-      for (
-        let obstacle
-        of obstacles
-      ) {
-
-        /*
-          Slightly smaller hitbox
-          than the visible image.
-        */
-
+      for (const obstacle of obstacles) {
         const dinoLeft =
           dino.x + 8;
-
 
         const dinoRight =
           dino.x +
           dino.width -
           8;
 
-
         const dinoTop =
           dino.y + 8;
-
 
         const dinoBottom =
           dino.y +
           dino.height -
           4;
 
-
         if (
-
           dinoLeft <
-          obstacle.x +
-          obstacle.width &&
+            obstacle.x +
+            obstacle.width &&
 
           dinoRight >
-          obstacle.x &&
+            obstacle.x &&
 
           dinoTop <
-          obstacle.y +
-          obstacle.height &&
+            obstacle.y +
+            obstacle.height &&
 
           dinoBottom >
-          obstacle.y
-
+            obstacle.y
         ) {
-
           endGame();
-
           return;
         }
       }
@@ -474,7 +335,6 @@
     ========================= */
 
     function draw() {
-
       ctx.clearRect(
         0,
         0,
@@ -482,191 +342,111 @@
         canvas.height
       );
 
+      /* Ground line */
 
-      /* =====================
-         GROUND LINE
-      ===================== */
-
-      ctx.strokeStyle =
-        "#333";
-
-
+      ctx.strokeStyle = "#333";
       ctx.lineWidth = 2;
-
 
       ctx.beginPath();
 
-
       ctx.moveTo(
         0,
-        groundY +
-        dino.height
+        groundY + dino.height
       );
-
 
       ctx.lineTo(
         canvas.width,
-        groundY +
-        dino.height
+        groundY + dino.height
       );
-
 
       ctx.stroke();
 
+      /* Dino */
 
-      /* =====================
-         DINO
-      ===================== */
-
-      ctx.drawImage(
-
-        dinoImg,
-
-        dino.x,
-
-        dino.y,
-
-        dino.width,
-
-        dino.height
-
-      );
-
-
-      /* =====================
-         RED OBSTACLES
-      ===================== */
-
-      ctx.fillStyle =
-        "red";
-
-
-      for (
-        let obstacle
-        of obstacles
-      ) {
+      if (dinoImg.complete) {
+        ctx.drawImage(
+          dinoImg,
+          dino.x,
+          dino.y,
+          dino.width,
+          dino.height
+        );
+      } else {
+        // Temporary square if dino.png
+        // has not loaded yet.
+        ctx.fillStyle = "green";
 
         ctx.fillRect(
-
-          obstacle.x,
-
-          obstacle.y,
-
-          obstacle.width,
-
-          obstacle.height
-
+          dino.x,
+          dino.y,
+          dino.width,
+          dino.height
         );
       }
 
+      /* Obstacles */
 
-      /* =====================
-         CHROME-STYLE SCORE
-      ===================== */
+      ctx.fillStyle = "red";
 
-      ctx.fillStyle =
-        "#555";
+      for (const obstacle of obstacles) {
+        ctx.fillRect(
+          obstacle.x,
+          obstacle.y,
+          obstacle.width,
+          obstacle.height
+        );
+      }
 
+      /* Score */
 
-      ctx.font =
-        "bold 20px monospace";
-
-
-      ctx.textAlign =
-        "right";
-
+      ctx.fillStyle = "#555";
+      ctx.font = "bold 20px monospace";
+      ctx.textAlign = "right";
 
       const currentScore =
-        String(
-          Math.floor(score)
-        )
-        .padStart(
-          5,
-          "0"
-        );
-
+        String(Math.floor(score))
+          .padStart(5, "0");
 
       const bestScore =
-        String(
-          Math.floor(highScore)
-        )
-        .padStart(
-          5,
-          "0"
-        );
-
-
-      /*
-        Example:
-
-        HI 00997 00235
-      */
+        String(Math.floor(highScore))
+          .padStart(5, "0");
 
       ctx.fillText(
-
         "HI " +
         bestScore +
         "  " +
         currentScore,
 
         canvas.width - 20,
-
         30
-
       );
 
+      ctx.textAlign = "left";
 
-      ctx.textAlign =
-        "left";
-
-
-      /* =====================
-         GAME OVER
-      ===================== */
+      /* Game over message */
 
       if (gameOver) {
-
-        ctx.fillStyle =
-          "#555";
-
-
-        ctx.font =
-          "bold 36px Arial";
-
-
-        ctx.textAlign =
-          "center";
-
+        ctx.fillStyle = "#555";
+        ctx.font = "bold 36px Arial";
+        ctx.textAlign = "center";
 
         ctx.fillText(
-
           "GAME OVER",
-
           canvas.width / 2,
-
           130
-
         );
 
-
-        ctx.font =
-          "20px Arial";
-
+        ctx.font = "20px Arial";
 
         ctx.fillText(
-
           "Score: " +
           Math.floor(score),
 
           canvas.width / 2,
-
           165
-
         );
 
-
-        ctx.textAlign =
-          "left";
+        ctx.textAlign = "left";
       }
     }
 
@@ -676,21 +456,12 @@
     ========================= */
 
     function loop() {
-
       update();
-
       draw();
 
-
-      if (
-        !gameOver &&
-        !paused
-      ) {
-
+      if (!gameOver && !paused) {
         animationFrame =
-          requestAnimationFrame(
-            loop
-          );
+          requestAnimationFrame(loop);
       }
     }
 
@@ -700,28 +471,16 @@
     ========================= */
 
     function endGame() {
-
       gameOver = true;
 
-
-      if (
-        score >
-        highScore
-      ) {
-
-        highScore =
-          Math.floor(score);
-
+      if (score > highScore) {
+        highScore = Math.floor(score);
 
         localStorage.setItem(
-
           "dinoHighScore",
-
           highScore
-
         );
       }
-
 
       restartBtn.style.display =
         "inline-block";
@@ -729,19 +488,14 @@
 
 
     /* =========================
-       SPACEBAR JUMP
+       KEYBOARD
     ========================= */
 
     document.addEventListener(
       "keydown",
-      function(e) {
-
-        if (
-          e.code === "Space"
-        ) {
-
-          e.preventDefault();
-
+      function(event) {
+        if (event.code === "Space") {
+          event.preventDefault();
           jump();
         }
       }
@@ -749,7 +503,7 @@
 
 
     /* =========================
-       JUMP BUTTON
+       GAME BUTTONS
     ========================= */
 
     jumpBtn.addEventListener(
@@ -757,120 +511,191 @@
       jump
     );
 
-
-    /* =========================
-       PAUSE
-    ========================= */
-
     pauseBtn.addEventListener(
       "click",
       function() {
-
-        if (
-          gameOver ||
-          paused
-        ) {
-
+        if (gameOver || paused) {
           return;
         }
 
-
         paused = true;
-
 
         cancelAnimationFrame(
           animationFrame
         );
       }
     );
-
-
-    /* =========================
-       RESUME
-    ========================= */
 
     resumeBtn.addEventListener(
       "click",
       function() {
-
-        if (
-          gameOver ||
-          !paused
-        ) {
-
+        if (gameOver || !paused) {
           return;
         }
 
-
         paused = false;
 
-
         animationFrame =
-          requestAnimationFrame(
-            loop
-          );
+          requestAnimationFrame(loop);
       }
     );
-
-
-    /* =========================
-       PLAY
-    ========================= */
 
     playBtn.addEventListener(
       "click",
       function() {
-
-        playBtn.style.display =
-          "none";
-
-
-        canvas.style.display =
-          "block";
-
+        playBtn.style.display = "none";
+        canvas.style.display = "block";
 
         restartBtn.style.display =
           "none";
 
-
         init();
 
-
         animationFrame =
-          requestAnimationFrame(
-            loop
-          );
+          requestAnimationFrame(loop);
       }
     );
-
-
-    /* =========================
-       RESTART
-    ========================= */
 
     restartBtn.addEventListener(
       "click",
       function() {
-
         restartBtn.style.display =
           "none";
-
 
         cancelAnimationFrame(
           animationFrame
         );
 
-
         init();
 
-
         animationFrame =
-          requestAnimationFrame(
-            loop
-          );
+          requestAnimationFrame(loop);
       }
     );
 
+
+    /* =========================
+       ESP8266 CONNECTION
+    ========================= */
+
+    let espPort;
+    let espReader;
+
+    connectEspBtn.addEventListener(
+      "click",
+      async function() {
+        if (!("serial" in navigator)) {
+          alert(
+            "Please open this website in Chrome or Edge."
+          );
+
+          return;
+        }
+
+        try {
+          espPort =
+            await navigator.serial.requestPort();
+
+          await espPort.open({
+            baudRate: 115200
+          });
+
+          connectionStatus.textContent =
+            "ESP8266 connected!";
+
+          connectionStatus.style.color =
+            "green";
+
+          connectEspBtn.textContent =
+            "ESP8266 Connected";
+
+          connectEspBtn.disabled = true;
+
+          readEspCommands();
+
+        } catch (error) {
+          console.error(error);
+
+          connectionStatus.textContent =
+            "Connection failed";
+
+          connectionStatus.style.color =
+            "red";
+
+          alert(
+            "Could not connect. Make sure Arduino Serial Monitor is closed."
+          );
+        }
+      }
+    );
+
+
+    /* =========================
+       READ ESP8266 COMMANDS
+    ========================= */
+
+    async function readEspCommands() {
+      const decoder =
+        new TextDecoder();
+
+      espReader =
+        espPort.readable.getReader();
+
+      let receivedText = "";
+
+      try {
+        while (true) {
+          const {
+            value,
+            done
+          } = await espReader.read();
+
+          if (done) {
+            break;
+          }
+
+          receivedText +=
+            decoder.decode(
+              value,
+              { stream: true }
+            );
+
+          const commands =
+            receivedText.split(/\r?\n/);
+
+          receivedText =
+            commands.pop();
+
+          for (const command of commands) {
+            console.log(
+              "ESP8266:",
+              command
+            );
+
+            if (
+              command.trim() === "JUMP"
+            ) {
+              jump();
+            }
+          }
+        }
+
+      } catch (error) {
+        console.error(
+          "ESP8266 reading error:",
+          error
+        );
+
+        connectionStatus.textContent =
+          "ESP8266 disconnected";
+
+        connectionStatus.style.color =
+          "red";
+
+      } finally {
+        espReader.releaseLock();
+      }
+    }
   </script>
 
 </body>
