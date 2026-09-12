@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
 
@@ -26,13 +27,14 @@
     }
 
     #info {
-      font-size: 20px;
       margin: 10px;
+      font-size: 20px;
     }
 
     #connectionStatus {
-      font-weight: bold;
       color: #ff6b6b;
+      font-size: 18px;
+      font-weight: bold;
     }
 
     button {
@@ -43,6 +45,11 @@
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: 0.7;
     }
 
     #connectBtn {
@@ -71,11 +78,18 @@
   <h1>AIISAI BLOCK BREAKER</h1>
 
   <div id="info">
-    Score: <span id="score">0</span>
+    Score:
+    <span id="score">0</span>
+
     &nbsp; | &nbsp;
-    Lives: <span id="lives">3</span>
+
+    Lives:
+    <span id="lives">3</span>
+
     &nbsp; | &nbsp;
-    Level: <span id="level">1</span>
+
+    Level:
+    <span id="level">1</span>
   </div>
 
   <button id="connectBtn">
@@ -120,7 +134,9 @@
       document.getElementById("startBtn");
 
     const connectionStatus =
-      document.getElementById("connectionStatus");
+      document.getElementById(
+        "connectionStatus"
+      );
 
     const scoreText =
       document.getElementById("score");
@@ -147,6 +163,11 @@
       "Press Start or press the joystick";
 
     let lastTime = 0;
+
+    /*
+      Your joystick centre is
+      approximately 530–550.
+    */
 
     let joystickValue = 540;
 
@@ -263,14 +284,14 @@
         ball.radius -
         3;
 
-      const speedIncrease =
+      const extraSpeed =
         (level - 1) * 25;
 
       ball.dx =
-        260 + speedIncrease;
+        260 + extraSpeed;
 
       ball.dy =
-        -(330 + speedIncrease);
+        -(330 + extraSpeed);
 
       playing = false;
     }
@@ -320,23 +341,21 @@
 
 
     /* =========================
-       JOYSTICK MOVEMENT
+       PADDLE MOVEMENT
     ========================= */
 
     function movePaddle(deltaTime) {
       let movement = 0;
 
       /*
-        Centre is around 540.
-
-        460 to 620 is the dead zone,
-        so small centre movements
-        will not move the paddle.
+        460–620 is the centre
+        dead zone.
       */
 
       if (joystickValue < 460) {
         const strength =
-          (460 - joystickValue) / 460;
+          (460 - joystickValue) /
+          460;
 
         movement =
           -paddle.speed *
@@ -355,6 +374,7 @@
           deltaTime;
       }
 
+
       /* Keyboard backup */
 
       if (leftKeyPressed) {
@@ -369,7 +389,11 @@
           deltaTime;
       }
 
+
       paddle.x += movement;
+
+
+      /* Stop paddle leaving screen */
 
       if (paddle.x < 0) {
         paddle.x = 0;
@@ -385,9 +409,10 @@
           paddle.width;
       }
 
+
       /*
         Keep the ball on the paddle
-        until the game starts.
+        before the game starts.
       */
 
       if (!playing) {
@@ -412,8 +437,8 @@
         return;
       }
 
-      const previousX = ball.x;
-      const previousY = ball.y;
+      const previousY =
+        ball.y;
 
       ball.x +=
         ball.dx * deltaTime;
@@ -422,16 +447,21 @@
         ball.dy * deltaTime;
 
 
-      /* Left and right walls */
+      /* Left wall */
 
       if (
         ball.x -
         ball.radius <= 0
       ) {
-        ball.x = ball.radius;
+        ball.x =
+          ball.radius;
+
         ball.dx =
           Math.abs(ball.dx);
       }
+
+
+      /* Right wall */
 
       if (
         ball.x +
@@ -453,7 +483,9 @@
         ball.y -
         ball.radius <= 0
       ) {
-        ball.y = ball.radius;
+        ball.y =
+          ball.radius;
+
         ball.dy =
           Math.abs(ball.dy);
       }
@@ -518,7 +550,7 @@
       }
 
 
-      /* Brick collision */
+      /* Brick collisions */
 
       for (const brick of bricks) {
         if (!brick.visible) {
@@ -548,25 +580,7 @@
 
           score += 10;
 
-          const cameFromTop =
-            previousY +
-            ball.radius <=
-            brick.y;
-
-          const cameFromBottom =
-            previousY -
-            ball.radius >=
-            brick.y +
-            brick.height;
-
-          if (
-            cameFromTop ||
-            cameFromBottom
-          ) {
-            ball.dy *= -1;
-          } else {
-            ball.dx *= -1;
-          }
+          ball.dy *= -1;
 
           updateInformation();
           checkLevelComplete();
@@ -576,7 +590,7 @@
       }
 
 
-      /* Ball missed */
+      /* Player missed the ball */
 
       if (
         ball.y -
@@ -592,12 +606,12 @@
           gameOver = true;
 
           message =
-            "GAME OVER — press Start or the joystick";
+            "GAME OVER — press Start";
         } else {
           resetBall();
 
           message =
-            "You missed! Press Start or the joystick";
+            "You missed! Press Start";
         }
       }
     }
@@ -628,7 +642,7 @@
 
 
     /* =========================
-       DRAWING
+       DRAW BACKGROUND
     ========================= */
 
     function drawBackground() {
@@ -663,6 +677,10 @@
     }
 
 
+    /* =========================
+       DRAW BRICKS
+    ========================= */
+
     function drawBricks() {
       for (const brick of bricks) {
         if (!brick.visible) {
@@ -692,6 +710,10 @@
     }
 
 
+    /* =========================
+       DRAW PADDLE
+    ========================= */
+
     function drawPaddle() {
       ctx.fillStyle = "#55ddff";
       ctx.shadowColor = "#55ddff";
@@ -708,6 +730,10 @@
     }
 
 
+    /* =========================
+       DRAW BALL
+    ========================= */
+
     function drawBall() {
       ctx.beginPath();
 
@@ -720,7 +746,7 @@
       );
 
       ctx.fillStyle = "white";
-      ctx.shadowColor = "#ffffff";
+      ctx.shadowColor = "white";
       ctx.shadowBlur = 15;
 
       ctx.fill();
@@ -728,6 +754,10 @@
       ctx.shadowBlur = 0;
     }
 
+
+    /* =========================
+       DRAW MESSAGE
+    ========================= */
 
     function drawMessage() {
       if (message === "") {
@@ -758,6 +788,10 @@
     }
 
 
+    /* =========================
+       DRAW EVERYTHING
+    ========================= */
+
     function draw() {
       drawBackground();
       drawBricks();
@@ -773,7 +807,8 @@
 
     function gameLoop(time) {
       let deltaTime =
-        (time - lastTime) / 1000;
+        (time - lastTime) /
+        1000;
 
       lastTime = time;
 
@@ -792,13 +827,18 @@
 
 
     /* =========================
-       SCORE DISPLAY
+       INFORMATION
     ========================= */
 
     function updateInformation() {
-      scoreText.textContent = score;
-      livesText.textContent = lives;
-      levelText.textContent = level;
+      scoreText.textContent =
+        score;
+
+      livesText.textContent =
+        lives;
+
+      levelText.textContent =
+        level;
     }
 
 
@@ -852,120 +892,263 @@
 
 
     /* =========================
-       ESP8266 CONNECTION
+       SERIAL CONNECTION
     ========================= */
 
-    let espPort;
-    let espReader;
+    let espPort = null;
+    let espReader = null;
+    let controllerConnected = false;
+
+
+    function wait(milliseconds) {
+      return new Promise(
+        resolve =>
+          setTimeout(
+            resolve,
+            milliseconds
+          )
+      );
+    }
+
+
+    function showConnected() {
+      controllerConnected = true;
+
+      connectBtn.textContent =
+        "ESP8266 Connected";
+
+      connectBtn.disabled = true;
+
+      connectionStatus.textContent =
+        "Controller connected";
+
+      connectionStatus.style.color =
+        "#49e670";
+    }
+
+
+    function showDisconnected() {
+      controllerConnected = false;
+
+      connectBtn.textContent =
+        "Reconnect ESP8266";
+
+      connectBtn.disabled = false;
+
+      connectionStatus.textContent =
+        "Controller disconnected";
+
+      connectionStatus.style.color =
+        "#ff6b6b";
+    }
+
 
     connectBtn.addEventListener(
       "click",
-      async function() {
-        if (!("serial" in navigator)) {
-          alert(
-            "Open the HTTPS version of this page in Chrome or Edge."
-          );
-
-          return;
-        }
-
-        try {
-          espPort =
-            await navigator.serial.requestPort();
-
-          await espPort.open({
-            baudRate: 115200
-          });
-
-          connectBtn.textContent =
-            "ESP8266 Connected";
-
-          connectBtn.disabled = true;
-
-          connectionStatus.textContent =
-            "Controller connected";
-
-          connectionStatus.style.color =
-            "#49e670";
-
-          readEspController();
-
-        } catch (error) {
-          console.error(error);
-
-          alert(
-            "Connection failed. Close Arduino Serial Monitor and try again."
-          );
-        }
-      }
+      connectEsp8266
     );
 
 
+    async function connectEsp8266() {
+      if (!("serial" in navigator)) {
+        alert(
+          "Open this page using HTTPS in Chrome or Edge."
+        );
+
+        return;
+      }
+
+      connectBtn.disabled = true;
+
+      connectionStatus.textContent =
+        "Choose the CP2102 controller...";
+
+      connectionStatus.style.color =
+        "#ffc857";
+
+      try {
+        espPort =
+          await navigator.serial.requestPort();
+
+        connectionStatus.textContent =
+          "Opening controller...";
+
+        await espPort.open({
+          baudRate: 115200
+        });
+
+
+        /*
+          Opening the serial port may
+          restart the ESP8266.
+
+          Wait for it to finish booting.
+        */
+
+        connectionStatus.textContent =
+          "Waiting for ESP8266...";
+
+        await wait(2000);
+
+
+        /*
+          Send the START handshake.
+        */
+
+        const writer =
+          espPort.writable.getWriter();
+
+        const encoder =
+          new TextEncoder();
+
+        await writer.write(
+          encoder.encode("START\n")
+        );
+
+        writer.releaseLock();
+
+
+        showConnected();
+
+        readEspController();
+
+      } catch (error) {
+        console.error(
+          "Connection error:",
+          error
+        );
+
+        connectBtn.disabled = false;
+
+        connectBtn.textContent =
+          "Connect ESP8266";
+
+        connectionStatus.textContent =
+          "Connection failed — try again";
+
+        connectionStatus.style.color =
+          "#ff6b6b";
+
+        alert(
+          "Connection failed: " +
+          error.message
+        );
+      }
+    }
+
+
     /* =========================
-       READ ESP8266
+       READ ESP8266 DATA
     ========================= */
 
     async function readEspController() {
       const decoder =
         new TextDecoder();
 
-      espReader =
-        espPort.readable.getReader();
-
       let receivedText = "";
 
       try {
-        while (true) {
-          const {
-            value,
-            done
-          } = await espReader.read();
+        /*
+          A temporary serial error can
+          create a new readable stream.
 
-          if (done) {
-            break;
-          }
+          This loop reconnects the reader
+          instead of immediately giving up.
+        */
 
-          receivedText +=
-            decoder.decode(
-              value,
-              { stream: true }
+        while (
+          espPort &&
+          espPort.readable
+        ) {
+          espReader =
+            espPort.readable.getReader();
+
+          try {
+            while (true) {
+              const {
+                value,
+                done
+              } = await espReader.read();
+
+              if (done) {
+                break;
+              }
+
+              if (!value) {
+                continue;
+              }
+
+              if (!controllerConnected) {
+                showConnected();
+              }
+
+              receivedText +=
+                decoder.decode(
+                  value,
+                  { stream: true }
+                );
+
+              const commands =
+                receivedText.split(
+                  /\r?\n/
+                );
+
+              receivedText =
+                commands.pop();
+
+              for (
+                const command
+                of commands
+              ) {
+                handleEspCommand(
+                  command.trim()
+                );
+              }
+            }
+
+          } catch (readError) {
+            /*
+              Do not immediately disconnect.
+              Give Chrome time to recover.
+            */
+
+            console.warn(
+              "Temporary serial error:",
+              readError
             );
 
-          const commands =
-            receivedText.split(/\r?\n/);
+            connectionStatus.textContent =
+              "Recovering controller...";
 
-          receivedText =
-            commands.pop();
+            connectionStatus.style.color =
+              "#ffc857";
 
-          for (
-            const command of commands
-          ) {
-            handleEspCommand(
-              command.trim()
-            );
+            await wait(300);
+
+          } finally {
+            espReader.releaseLock();
+            espReader = null;
           }
         }
 
       } catch (error) {
-        console.error(error);
-
-        connectionStatus.textContent =
-          "Controller disconnected";
-
-        connectionStatus.style.color =
-          "#ff6b6b";
-
-      } finally {
-        espReader.releaseLock();
+        console.error(
+          "Serial reader stopped:",
+          error
+        );
       }
+
+      showDisconnected();
     }
 
 
     /* =========================
-       ESP8266 COMMANDS
+       HANDLE ESP8266 COMMANDS
     ========================= */
 
-    function handleEspCommand(command) {
+    function handleEspCommand(
+      command
+    ) {
       if (
         command.startsWith(
           "JOYSTICK:"
@@ -990,7 +1173,26 @@
 
 
     /* =========================
-       BEGIN
+       PHYSICAL USB DISCONNECT
+    ========================= */
+
+    if ("serial" in navigator) {
+      navigator.serial.addEventListener(
+        "disconnect",
+        function(event) {
+          if (
+            espPort &&
+            event.target === espPort
+          ) {
+            showDisconnected();
+          }
+        }
+      );
+    }
+
+
+    /* =========================
+       BEGIN GAME
     ========================= */
 
     newGame();
@@ -1001,4 +1203,5 @@
   </script>
 
 </body>
+
 </html>
