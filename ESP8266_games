@@ -1,1 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
 
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>AIISAI Block Breaker</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #081426;
+      color: white;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+      color: #55ddff;
+    }
+
+    #info {
+      font-size: 20px;
+      margin: 10px;
+    }
+
+    #connectionStatus {
+      font-weight: bold;
+      color: #ff6b6b;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 8px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #connectBtn {
+      background: #ffc857;
+    }
+
+    #startBtn {
+      background: #49e670;
+    }
+
+    canvas {
+      display: block;
+      width: min(95vw, 900px);
+      height: auto;
+      margin: 10px auto 30px;
+      background: #050913;
+      border: 4px solid #55ddff;
+      border-radius: 10px;
+      box-shadow: 0 0 25px #1b92ff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>AIISAI BLOCK BREAKER</h1>
+
+  <div id="info">
+    Score: <span id="score">0</span>
+    &nbsp; | &nbsp;
+    Lives: <span id="lives">3</span>
+    &nbsp; | &nbsp;
+    Level: <span id="level">1</span>
+  </div>
+
+  <button id="connectBtn">
+    Connect ESP8266
+  </button>
+
+  <button id="startBtn">
+    Start Game
+  </button>
+
+  <p id="connectionStatus">
+    ESP8266 not connected
+  </p>
+
+  <p>
+    Move the joystick left and right.
+    Press the joystick to start.
+  </p>
+
+  <canvas
+    id="gameCanvas"
+    width="900"
+    height="600"
+  ></canvas>
+
+
+  <script>
+    /* =========================
+       PAGE ELEMENTS
+    ========================= */
+
+    const canvas =
+      document.getElementById("gameCanvas");
+
+    const ctx =
+      canvas.getContext("2d");
+
+    const connectBtn =
+      document.getElementById("connectBtn");
+
+    const startBtn =
+      document.getElementById("startBtn");
+
+    const connectionStatus =
+      document.getElementById("connectionStatus");
+
+    const scoreText =
+      document.getElementById("score");
+
+    const livesText =
+      document.getElementById("lives");
+
+    const levelText =
+      document.getElementById("level");
+
+
+    /* =========================
+       GAME VARIABLES
+    ========================= */
+
+    let score = 0;
+    let lives = 3;
+    let level = 1;
+
+    let playing = false;
+    let gameOver = false;
+
+    let message =
+      "Press Start or press the joystick";
+
+    let lastTime = 0;
+
+    let joystickValue = 540;
+
+    let leftKeyPressed = false;
+    let rightKeyPressed = false;
+
+
+    /* =========================
+       PADDLE
+    ========================= */
+
+    const paddle = {
+      x: 375,
+      y: 550,
+      width: 150,
+      height: 18,
+      speed: 650
+    };
+
+
+    /* =========================
+       BALL
+    ========================= */
+
+    const ball = {
+      x: 450,
+      y: 530,
+      radius: 10,
+      dx: 280,
+      dy: -330
+    };
+
+
+    /* =========================
+       BRICKS
+    ========================= */
+
+    let bricks = [];
+
+    const brickColumns = 10;
+    const brickWidth = 76;
+    const brickHeight = 25;
+    const brickGap = 8;
+    const brickStartX = 34;
+    const brickStartY = 70;
+
+    const brickColours = [
+      "#ff4d6d",
+      "#ff9f1c",
+      "#ffe66d",
+      "#4ee66d",
+      "#45caff",
+      "#a66cff"
+    ];
+
+
+    function createBricks() {
+      bricks = [];
+
+      const rows =
+        Math.min(4 + level, 8);
+
+      for (
+        let row = 0;
+        row < rows;
+        row++
+      ) {
+        for (
+          let column = 0;
+          column < brickColumns;
+          column++
+        ) {
+          bricks.push({
+            x:
+              brickStartX +
+              column *
+              (brickWidth + brickGap),
+
+            y:
+              brickStartY +
+              row *
+              (brickHeight + brickGap),
+
+            width: brickWidth,
+            height: brickHeight,
+            visible: true,
+
+            colour:
+              brickColours[
+                row %
+                brickColours.length
+              ]
+          });
+        }
+      }
+    }
+
+
+    /* =========================
+       RESET BALL
+    ========================= */
+
+    function resetBall() {
+      paddle.x =
+        canvas.width / 2 -
+        paddle.width / 2;
+
+      ball.x =
+        paddle.x +
+        paddle.width / 2;
+
+      ball.y =
+        paddle.y -
+        ball.radius -
+        3;
+
+      const speedIncrease =
+        (level - 1) * 25;
+
+      ball.dx =
+        260 + speedIncrease;
+
+      ball.dy =
+        -(330 + speedIncrease);
+
+      playing = false;
+    }
+
+
+    /* =========================
+       NEW GAME
+    ========================= */
+
+    function newGame() {
+      score = 0;
+      lives = 3;
+      level = 1;
+
+      gameOver = false;
+
+      createBricks();
+      resetBall();
+
+      message =
+        "Press Start or press the joystick";
+
+      updateInformation();
+    }
+
+
+    /* =========================
+       START GAME
+    ========================= */
+
+    function startGame() {
+      if (gameOver) {
+        newGame();
+      }
+
+      if (!playing) {
+        playing = true;
+        message = "";
+      }
+    }
+
+
+    startBtn.addEventListener(
+      "click",
+      startGame
+    );
+
+
+    /* =========================
+       JOYSTICK MOVEMENT
+    ========================= */
+
+    function movePaddle(deltaTime) {
+      let movement = 0;
+
+      /*
+        Centre is around 540.
+
+        460 to 620 is the dead zone,
+        so small centre movements
+        will not move the paddle.
+      */
+
+      if (joystickValue < 460) {
+        const strength =
+          (460 - joystickValue) / 460;
+
+        movement =
+          -paddle.speed *
+          strength *
+          deltaTime;
+      }
+
+      if (joystickValue > 620) {
+        const strength =
+          (joystickValue - 620) /
+          (1023 - 620);
+
+        movement =
+          paddle.speed *
+          strength *
+          deltaTime;
+      }
+
+      /* Keyboard backup */
+
+      if (leftKeyPressed) {
+        movement =
+          -paddle.speed *
+          deltaTime;
+      }
+
+      if (rightKeyPressed) {
+        movement =
+          paddle.speed *
+          deltaTime;
+      }
+
+      paddle.x += movement;
+
+      if (paddle.x < 0) {
+        paddle.x = 0;
+      }
+
+      if (
+        paddle.x +
+        paddle.width >
+        canvas.width
+      ) {
+        paddle.x =
+          canvas.width -
+          paddle.width;
+      }
+
+      /*
+        Keep the ball on the paddle
+        until the game starts.
+      */
+
+      if (!playing) {
+        ball.x =
+          paddle.x +
+          paddle.width / 2;
+
+        ball.y =
+          paddle.y -
+          ball.radius -
+          3;
+      }
+    }
+
+
+    /* =========================
+       UPDATE BALL
+    ========================= */
+
+    function updateBall(deltaTime) {
+      if (!playing) {
+        return;
+      }
+
+      const previousX = ball.x;
+      const previousY = ball.y;
+
+      ball.x +=
+        ball.dx * deltaTime;
+
+      ball.y +=
+        ball.dy * deltaTime;
+
+
+      /* Left and right walls */
+
+      if (
+        ball.x -
+        ball.radius <= 0
+      ) {
+        ball.x = ball.radius;
+        ball.dx =
+          Math.abs(ball.dx);
+      }
+
+      if (
+        ball.x +
+        ball.radius >=
+        canvas.width
+      ) {
+        ball.x =
+          canvas.width -
+          ball.radius;
+
+        ball.dx =
+          -Math.abs(ball.dx);
+      }
+
+
+      /* Top wall */
+
+      if (
+        ball.y -
+        ball.radius <= 0
+      ) {
+        ball.y = ball.radius;
+        ball.dy =
+          Math.abs(ball.dy);
+      }
+
+
+      /* Paddle collision */
+
+      if (
+        ball.dy > 0 &&
+
+        ball.x +
+        ball.radius >
+        paddle.x &&
+
+        ball.x -
+        ball.radius <
+        paddle.x +
+        paddle.width &&
+
+        ball.y +
+        ball.radius >
+        paddle.y &&
+
+        previousY +
+        ball.radius <=
+        paddle.y
+      ) {
+        ball.y =
+          paddle.y -
+          ball.radius;
+
+        const paddleCentre =
+          paddle.x +
+          paddle.width / 2;
+
+        const hitPosition =
+          (ball.x - paddleCentre) /
+          (paddle.width / 2);
+
+        const ballSpeed =
+          Math.sqrt(
+            ball.dx * ball.dx +
+            ball.dy * ball.dy
+          );
+
+        ball.dx =
+          hitPosition *
+          ballSpeed *
+          0.9;
+
+        ball.dy =
+          -Math.sqrt(
+            Math.max(
+              10000,
+
+              ballSpeed *
+              ballSpeed -
+              ball.dx *
+              ball.dx
+            )
+          );
+      }
+
+
+      /* Brick collision */
+
+      for (const brick of bricks) {
+        if (!brick.visible) {
+          continue;
+        }
+
+        if (
+          ball.x +
+          ball.radius >
+          brick.x &&
+
+          ball.x -
+          ball.radius <
+          brick.x +
+          brick.width &&
+
+          ball.y +
+          ball.radius >
+          brick.y &&
+
+          ball.y -
+          ball.radius <
+          brick.y +
+          brick.height
+        ) {
+          brick.visible = false;
+
+          score += 10;
+
+          const cameFromTop =
+            previousY +
+            ball.radius <=
+            brick.y;
+
+          const cameFromBottom =
+            previousY -
+            ball.radius >=
+            brick.y +
+            brick.height;
+
+          if (
+            cameFromTop ||
+            cameFromBottom
+          ) {
+            ball.dy *= -1;
+          } else {
+            ball.dx *= -1;
+          }
+
+          updateInformation();
+          checkLevelComplete();
+
+          break;
+        }
+      }
+
+
+      /* Ball missed */
+
+      if (
+        ball.y -
+        ball.radius >
+        canvas.height
+      ) {
+        lives--;
+
+        updateInformation();
+
+        if (lives <= 0) {
+          playing = false;
+          gameOver = true;
+
+          message =
+            "GAME OVER — press Start or the joystick";
+        } else {
+          resetBall();
+
+          message =
+            "You missed! Press Start or the joystick";
+        }
+      }
+    }
+
+
+    /* =========================
+       LEVEL COMPLETE
+    ========================= */
+
+    function checkLevelComplete() {
+      const bricksRemaining =
+        bricks.some(
+          brick => brick.visible
+        );
+
+      if (!bricksRemaining) {
+        level++;
+
+        updateInformation();
+
+        createBricks();
+        resetBall();
+
+        message =
+          "LEVEL COMPLETE! Press Start";
+      }
+    }
+
+
+    /* =========================
+       DRAWING
+    ========================= */
+
+    function drawBackground() {
+      ctx.fillStyle = "#050913";
+
+      ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      ctx.strokeStyle = "#15243d";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 15]);
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        canvas.width / 2,
+        0
+      );
+
+      ctx.lineTo(
+        canvas.width / 2,
+        canvas.height
+      );
+
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+    }
+
+
+    function drawBricks() {
+      for (const brick of bricks) {
+        if (!brick.visible) {
+          continue;
+        }
+
+        ctx.fillStyle =
+          brick.colour;
+
+        ctx.fillRect(
+          brick.x,
+          brick.y,
+          brick.width,
+          brick.height
+        );
+
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 1;
+
+        ctx.strokeRect(
+          brick.x,
+          brick.y,
+          brick.width,
+          brick.height
+        );
+      }
+    }
+
+
+    function drawPaddle() {
+      ctx.fillStyle = "#55ddff";
+      ctx.shadowColor = "#55ddff";
+      ctx.shadowBlur = 15;
+
+      ctx.fillRect(
+        paddle.x,
+        paddle.y,
+        paddle.width,
+        paddle.height
+      );
+
+      ctx.shadowBlur = 0;
+    }
+
+
+    function drawBall() {
+      ctx.beginPath();
+
+      ctx.arc(
+        ball.x,
+        ball.y,
+        ball.radius,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fillStyle = "white";
+      ctx.shadowColor = "#ffffff";
+      ctx.shadowBlur = 15;
+
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+    }
+
+
+    function drawMessage() {
+      if (message === "") {
+        return;
+      }
+
+      ctx.fillStyle =
+        "rgba(0, 0, 0, 0.75)";
+
+      ctx.fillRect(
+        140,
+        300,
+        620,
+        100
+      );
+
+      ctx.fillStyle = "white";
+      ctx.font = "bold 25px Arial";
+      ctx.textAlign = "center";
+
+      ctx.fillText(
+        message,
+        canvas.width / 2,
+        360
+      );
+
+      ctx.textAlign = "left";
+    }
+
+
+    function draw() {
+      drawBackground();
+      drawBricks();
+      drawPaddle();
+      drawBall();
+      drawMessage();
+    }
+
+
+    /* =========================
+       GAME LOOP
+    ========================= */
+
+    function gameLoop(time) {
+      let deltaTime =
+        (time - lastTime) / 1000;
+
+      lastTime = time;
+
+      if (deltaTime > 0.03) {
+        deltaTime = 0.03;
+      }
+
+      movePaddle(deltaTime);
+      updateBall(deltaTime);
+      draw();
+
+      requestAnimationFrame(
+        gameLoop
+      );
+    }
+
+
+    /* =========================
+       SCORE DISPLAY
+    ========================= */
+
+    function updateInformation() {
+      scoreText.textContent = score;
+      livesText.textContent = lives;
+      levelText.textContent = level;
+    }
+
+
+    /* =========================
+       KEYBOARD CONTROLS
+    ========================= */
+
+    document.addEventListener(
+      "keydown",
+      function(event) {
+        if (
+          event.code === "ArrowLeft"
+        ) {
+          leftKeyPressed = true;
+          event.preventDefault();
+        }
+
+        if (
+          event.code === "ArrowRight"
+        ) {
+          rightKeyPressed = true;
+          event.preventDefault();
+        }
+
+        if (
+          event.code === "Space"
+        ) {
+          startGame();
+          event.preventDefault();
+        }
+      }
+    );
+
+
+    document.addEventListener(
+      "keyup",
+      function(event) {
+        if (
+          event.code === "ArrowLeft"
+        ) {
+          leftKeyPressed = false;
+        }
+
+        if (
+          event.code === "ArrowRight"
+        ) {
+          rightKeyPressed = false;
+        }
+      }
+    );
+
+
+    /* =========================
+       ESP8266 CONNECTION
+    ========================= */
+
+    let espPort;
+    let espReader;
+
+    connectBtn.addEventListener(
+      "click",
+      async function() {
+        if (!("serial" in navigator)) {
+          alert(
+            "Open the HTTPS version of this page in Chrome or Edge."
+          );
+
+          return;
+        }
+
+        try {
+          espPort =
+            await navigator.serial.requestPort();
+
+          await espPort.open({
+            baudRate: 115200
+          });
+
+          connectBtn.textContent =
+            "ESP8266 Connected";
+
+          connectBtn.disabled = true;
+
+          connectionStatus.textContent =
+            "Controller connected";
+
+          connectionStatus.style.color =
+            "#49e670";
+
+          readEspController();
+
+        } catch (error) {
+          console.error(error);
+
+          alert(
+            "Connection failed. Close Arduino Serial Monitor and try again."
+          );
+        }
+      }
+    );
+
+
+    /* =========================
+       READ ESP8266
+    ========================= */
+
+    async function readEspController() {
+      const decoder =
+        new TextDecoder();
+
+      espReader =
+        espPort.readable.getReader();
+
+      let receivedText = "";
+
+      try {
+        while (true) {
+          const {
+            value,
+            done
+          } = await espReader.read();
+
+          if (done) {
+            break;
+          }
+
+          receivedText +=
+            decoder.decode(
+              value,
+              { stream: true }
+            );
+
+          const commands =
+            receivedText.split(/\r?\n/);
+
+          receivedText =
+            commands.pop();
+
+          for (
+            const command of commands
+          ) {
+            handleEspCommand(
+              command.trim()
+            );
+          }
+        }
+
+      } catch (error) {
+        console.error(error);
+
+        connectionStatus.textContent =
+          "Controller disconnected";
+
+        connectionStatus.style.color =
+          "#ff6b6b";
+
+      } finally {
+        espReader.releaseLock();
+      }
+    }
+
+
+    /* =========================
+       ESP8266 COMMANDS
+    ========================= */
+
+    function handleEspCommand(command) {
+      if (
+        command.startsWith(
+          "JOYSTICK:"
+        )
+      ) {
+        const value =
+          Number(
+            command.substring(9)
+          );
+
+        if (!Number.isNaN(value)) {
+          joystickValue = value;
+        }
+      }
+
+      if (command === "BUTTON") {
+        if (!playing) {
+          startGame();
+        }
+      }
+    }
+
+
+    /* =========================
+       BEGIN
+    ========================= */
+
+    newGame();
+
+    requestAnimationFrame(
+      gameLoop
+    );
+  </script>
+
+</body>
+</html>
